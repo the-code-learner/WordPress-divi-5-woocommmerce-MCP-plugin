@@ -3,7 +3,7 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 0.1.2
+Stable tag: 0.1.3
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -14,7 +14,9 @@ Secure MCP foundations for WordPress, Divi 5, WooCommerce, browser-based preview
 
 MCP Bridge for Divi 5 and WooCommerce is an early-stage plugin that builds on the WordPress Abilities API and the official WordPress MCP Adapter.
 
-Version 0.1.2 adds privacy-preserving usage telemetry and automatic fatal-error reporting for the current pre-WordPress.org GitHub distribution. Usage telemetry and error reporting are separate administrator settings and are enabled by default in this temporary distribution phase. Either setting can be disabled under Settings > MCP Bridge.
+Version 0.1.3 adds plugin-scoped MCP update operations for the current development cycle. An authenticated MCP client can force a fresh stable GitHub release check, read the current and available plugin versions, and update only this plugin when the caller has the WordPress `update_plugins` capability and supplies an `expected_version` that exactly matches the release discovered by the updater.
+
+Usage telemetry and error reporting are separate administrator settings and are enabled by default in this temporary pre-WordPress.org GitHub distribution phase. Either setting can be disabled under Settings > MCP Bridge.
 
 The usage heartbeat sends only a random local installation identifier, plugin version, WordPress version, PHP major/minor version, and booleans indicating whether Divi and WooCommerce are detected. The telemetry service stores only a keyed hash of the installation identifier. Automatic error reports are restricted to fatal errors originating inside this plugin and include only sanitized plugin-owned diagnostics.
 
@@ -54,11 +56,15 @@ No. The target runtime is PHP + WordPress + browser-side JavaScript. Node toolin
 
 Stable GitHub Releases are used temporarily. The checker ignores GitHub prereleases, does not fall back to tags or branches, and requires the production release asset named `mcp-bridge-for-divi-woocommerce.zip`.
 
+= Can MCP update the plugin during development? =
+
+Yes, for this plugin only. `divi5-woocommerce-mcp/get-update-status` forces a fresh release check and reports the current and available versions. `divi5-woocommerce-mcp/update-self` requires the WordPress `update_plugins` capability and an exact `expected_version`. It does not accept a plugin path, package URL, arbitrary source, downgrade, or prerelease from the MCP client.
+
 = Can I disable GitHub update checks? =
 
-Yes. Go to Settings > MCP Bridge and disable GitHub updates. The option is enabled by default.
+Yes. Go to Settings > MCP Bridge and disable GitHub updates. The option is enabled by default. When disabled, MCP self-update is also unavailable.
 
-= What telemetry is sent in version 0.1.2? =
+= What telemetry is sent in version 0.1.3? =
 
 A low-frequency heartbeat sends a random installation identifier, plugin version, WordPress version, PHP major/minor version, and Divi/WooCommerce detection booleans. The first heartbeat is delayed and later heartbeats are scheduled approximately weekly with jitter.
 
@@ -72,7 +78,7 @@ Yes. Usage telemetry and automatic error reporting are separate Settings > MCP B
 
 = Is the plugin production ready? =
 
-No. Version 0.1.2 is still an early foundation release with a minimal read-only Ability and infrastructure for future implementation.
+No. Version 0.1.3 is still an early development release focused on MCP foundations, update tooling, and infrastructure for future implementation.
 
 = Why is the license GPL-2.0-or-later? =
 
@@ -83,6 +89,13 @@ WordPress.org requires GPL-compatible licensing. A non-commercial restriction is
 Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
+
+= 0.1.3 =
+* Add `divi5-woocommerce-mcp/get-update-status` to force a fresh stable GitHub release check and report current/available versions.
+* Add permission-gated `divi5-woocommerce-mcp/update-self` for this plugin only.
+* Require exact `expected_version` matching before installation and reject prereleases, downgrades, other plugin paths, and arbitrary package names.
+* Audit update status checks and self-update outcomes without storing credentials or package secrets.
+* Add unit coverage for the self-update guardrails.
 
 = 0.1.2 =
 * Add separate usage telemetry and automatic error-reporting administrator settings.
