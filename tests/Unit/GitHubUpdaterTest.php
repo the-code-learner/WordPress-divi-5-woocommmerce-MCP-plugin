@@ -1,0 +1,52 @@
+<?php
+/**
+ * GitHub updater tests.
+ *
+ * @package Divi5WooCommerceMCP
+ */
+
+declare(strict_types=1);
+
+namespace CodeLearner\Divi5WooCommerceMCP\Tests\Unit;
+
+use CodeLearner\Divi5WooCommerceMCP\Updates\GitHubUpdater;
+use PHPUnit\Framework\TestCase;
+
+final class GitHubUpdaterTest extends TestCase {
+	public function test_update_detection_is_release_only(): void {
+		$release = static function (): string {
+			return 'release';
+		};
+		$tag = static function (): string {
+			return 'tag';
+		};
+		$branch = static function (): string {
+			return 'branch';
+		};
+
+		$filtered = GitHubUpdater::filter_update_detection_strategies(
+			array(
+				'latest_release' => $release,
+				'latest_tag'     => $tag,
+				'branch'         => $branch,
+			)
+		);
+
+		self::assertSame( array( 'latest_release' => $release ), $filtered );
+	}
+
+	public function test_update_detection_has_no_fallback_without_release_strategy(): void {
+		$filtered = GitHubUpdater::filter_update_detection_strategies(
+			array(
+				'latest_tag' => static function (): string {
+					return 'tag';
+				},
+				'branch'     => static function (): string {
+					return 'branch';
+				},
+			)
+		);
+
+		self::assertSame( array(), $filtered );
+	}
+}

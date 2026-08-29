@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace CodeLearner\Divi5WooCommerceMCP;
 
+use CodeLearner\Divi5WooCommerceMCP\Admin\Settings;
 use CodeLearner\Divi5WooCommerceMCP\MCP\Server;
+use CodeLearner\Divi5WooCommerceMCP\Updates\GitHubUpdater;
 use CodeLearner\Divi5WooCommerceMCP\WordPress\Abilities;
 
 final class Plugin {
@@ -27,6 +29,8 @@ final class Plugin {
 			return;
 		}
 
+		Settings::hooks();
+		GitHubUpdater::boot();
 		Abilities::hooks();
 		Server::boot();
 	}
