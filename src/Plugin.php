@@ -34,7 +34,7 @@ final class Plugin {
 	public static function render_requirements_notice(): void {
 		printf(
 			'<div class="notice notice-error"><p>%s</p></div>',
-			esc_html__( 'Divi 5 + WooCommerce MCP requires WordPress 6.9 or newer because it uses the core Abilities API.', 'divi-5-woocommerce-mcp' )
+			esc_html__( 'MCP Bridge for Divi 5 and WooCommerce requires WordPress 6.9 or newer because it uses the core Abilities API.', 'mcp-bridge-for-divi-woocommerce' )
 		);
 	}
 

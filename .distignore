@@ -6,6 +6,8 @@
 /vendor/bin
 /node_modules
 /build
+/.phpunit.result.cache
+/languages/.gitkeep
 .distignore
 .gitignore
 .gitattributes

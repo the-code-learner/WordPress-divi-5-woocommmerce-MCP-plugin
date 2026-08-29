@@ -24,7 +24,7 @@ final class Server {
 	public static function render_missing_adapter_notice(): void {
 		printf(
 			'<div class="notice notice-error"><p>%s</p></div>',
-			esc_html__( 'Divi 5 + WooCommerce MCP could not load the official WordPress MCP Adapter package.', 'divi-5-woocommerce-mcp' )
+			esc_html__( 'MCP Bridge for Divi 5 and WooCommerce could not load the official WordPress MCP Adapter package.', 'mcp-bridge-for-divi-woocommerce' )
 		);
 	}
 

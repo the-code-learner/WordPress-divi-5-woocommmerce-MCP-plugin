@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SLUG="${1:-divi-5-woocommerce-mcp}"
+SLUG="${1:-mcp-bridge-for-divi-woocommerce}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${ROOT_DIR}/build"
 STAGE_DIR="${BUILD_DIR}/${SLUG}"

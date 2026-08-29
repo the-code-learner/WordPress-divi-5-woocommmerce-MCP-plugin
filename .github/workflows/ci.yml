@@ -53,19 +53,21 @@ jobs:
 
       - name: Verify distributable contents
         run: |
-          test ! -e build/divi-5-woocommerce-mcp/.github
-          test ! -e build/divi-5-woocommerce-mcp/tests
-          test ! -e build/divi-5-woocommerce-mcp/scripts
-          test ! -e build/divi-5-woocommerce-mcp/node_modules
-          test ! -e build/divi-5-woocommerce-mcp/vendor/bin
-          test -e build/divi-5-woocommerce-mcp/vendor
-          test -e build/divi-5-woocommerce-mcp/divi-5-woocommerce-mcp.php
-          test -f build/divi-5-woocommerce-mcp.zip
+          test ! -e build/mcp-bridge-for-divi-woocommerce/.github
+          test ! -e build/mcp-bridge-for-divi-woocommerce/tests
+          test ! -e build/mcp-bridge-for-divi-woocommerce/scripts
+          test ! -e build/mcp-bridge-for-divi-woocommerce/node_modules
+          test ! -e build/mcp-bridge-for-divi-woocommerce/vendor/bin
+          test ! -e build/mcp-bridge-for-divi-woocommerce/.phpunit.result.cache
+          test ! -e build/mcp-bridge-for-divi-woocommerce/languages/.gitkeep
+          test -e build/mcp-bridge-for-divi-woocommerce/vendor
+          test -e build/mcp-bridge-for-divi-woocommerce/divi-5-woocommerce-mcp.php
+          test -f build/mcp-bridge-for-divi-woocommerce.zip
 
       - name: WordPress Plugin Check
         uses: wordpress/plugin-check-action@v1
         with:
-          build-dir: './build/divi-5-woocommerce-mcp'
+          build-dir: './build/mcp-bridge-for-divi-woocommerce'
           categories: |
             general
             plugin_repo
@@ -74,6 +76,6 @@ jobs:
       - name: Upload distributable
         uses: actions/upload-artifact@v4
         with:
-          name: divi-5-woocommerce-mcp
-          path: build/divi-5-woocommerce-mcp.zip
+          name: mcp-bridge-for-divi-woocommerce
+          path: build/mcp-bridge-for-divi-woocommerce.zip
           if-no-files-found: error

@@ -1,5 +1,5 @@
 {
-  "name": "the-code-learner/divi-5-woocommerce-mcp",
+  "name": "the-code-learner/mcp-bridge-for-divi-woocommerce",
   "description": "WordPress, Divi 5 and WooCommerce capabilities exposed through the official WordPress MCP Adapter.",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",

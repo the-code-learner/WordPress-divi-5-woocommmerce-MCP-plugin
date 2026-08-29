@@ -25,8 +25,8 @@ final class Abilities {
 		wp_register_ability_category(
 			self::CATEGORY,
 			array(
-				'label'       => __( 'Divi 5 + WooCommerce MCP', 'divi-5-woocommerce-mcp' ),
-				'description' => __( 'Capabilities exposed by the Divi 5 + WooCommerce MCP plugin.', 'divi-5-woocommerce-mcp' ),
+				'label'       => __( 'MCP Bridge for Divi 5 and WooCommerce', 'mcp-bridge-for-divi-woocommerce' ),
+				'description' => __( 'Capabilities exposed by MCP Bridge for Divi 5 and WooCommerce.', 'mcp-bridge-for-divi-woocommerce' ),
 			)
 		);
 	}
@@ -35,8 +35,8 @@ final class Abilities {
 		wp_register_ability(
 			'divi5-woocommerce-mcp/get-status',
 			array(
-				'label'               => __( 'Get integration status', 'divi-5-woocommerce-mcp' ),
-				'description'         => __( 'Returns plugin, Divi 5, and WooCommerce detection status without modifying the site.', 'divi-5-woocommerce-mcp' ),
+				'label'               => __( 'Get integration status', 'mcp-bridge-for-divi-woocommerce' ),
+				'description'         => __( 'Returns plugin, Divi 5, and WooCommerce detection status without modifying the site.', 'mcp-bridge-for-divi-woocommerce' ),
 				'category'            => self::CATEGORY,
 				'execute_callback'    => array( self::class, 'get_status' ),
 				'permission_callback' => array( self::class, 'can_get_status' ),

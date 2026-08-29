@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Divi 5 + WooCommerce MCP
+ * Plugin Name: MCP Bridge for Divi 5 and WooCommerce
  * Plugin URI: https://github.com/the-code-learner/WordPress-divi-5-woocommmerce-MCP-plugin
  * Description: Secure MCP foundations for WordPress, Divi 5, WooCommerce, preview, and publishing workflows.
  * Version: 0.1.0
@@ -9,7 +9,7 @@
  * Author: The Code Learner
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: divi-5-woocommerce-mcp
+ * Text Domain: mcp-bridge-for-divi-woocommerce
  * Domain Path: /languages
  *
  * @package Divi5WooCommerceMCP
@@ -39,7 +39,7 @@ if ( file_exists( $divi5_wc_mcp_autoloader ) ) {
 		static function (): void {
 			printf(
 				'<div class="notice notice-error"><p>%s</p></div>',
-				esc_html__( 'Divi 5 + WooCommerce MCP is missing its Composer dependencies. Install a production build or run Composer before activating the development checkout.', 'divi-5-woocommerce-mcp' )
+				esc_html__( 'MCP Bridge for Divi 5 and WooCommerce is missing its Composer dependencies. Install a production build or run Composer before activating the development checkout.', 'mcp-bridge-for-divi-woocommerce' )
 			);
 		}
 	);

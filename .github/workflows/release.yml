@@ -42,7 +42,7 @@ jobs:
         shell: bash
         run: |
           gh release create "${GITHUB_REF_NAME}" \
-            build/divi-5-woocommerce-mcp.zip \
+            build/mcp-bridge-for-divi-woocommerce.zip \
             --title "${GITHUB_REF_NAME}" \
             --generate-notes
 

@@ -1,4 +1,4 @@
-# Divi 5 + WooCommerce MCP
+# MCP Bridge for Divi 5 and WooCommerce
 
 A WordPress plugin project for exposing controlled WordPress, Divi 5, WooCommerce, preview, and publishing capabilities to MCP clients.
 
@@ -120,7 +120,7 @@ The development checkout is not the WordPress.org package. Production builds mus
 CI and release jobs run `scripts/build-zip.sh`. The script stages a production package with `rsync`, applies `.distignore` as the exclusion source, and creates:
 
 ```text
-build/divi-5-woocommerce-mcp.zip
+build/mcp-bridge-for-divi-woocommerce.zip
 ```
 
 Development-only files such as `.github/`, `tests/`, `scripts/`, local tooling configuration, `vendor/bin/`, and dependency caches are excluded from the distributable. The WordPress.org deployment action also honors `.distignore`, so the GitHub ZIP and SVN deployment share the same distribution boundary.
@@ -149,7 +149,7 @@ Before enabling deployment:
 
 1. Create and verify a WordPress.org account.
 2. Replace the contributor placeholder in `readme.txt` with the exact public WordPress.org username.
-3. Set a tested WordPress version only after the package has actually been tested against that version.
+3. Keep `Tested up to` aligned with the WordPress version exercised by CI and real compatibility testing.
 4. Build the production ZIP and run Plugin Check/readme validation.
 5. Submit the ZIP through the WordPress.org Plugin Developer submission flow.
 6. Address review feedback.
@@ -157,6 +157,8 @@ Before enabling deployment:
 8. Set repository variable `WORDPRESS_ORG_SLUG` to the assigned slug.
 9. Set `WORDPRESS_ORG_DEPLOY_ENABLED=true`.
 10. Configure GitHub Environment `wordpress-production` with a required reviewer/manual approval before the first deploy.
+
+The provisional distribution slug is `mcp-bridge-for-divi-woocommerce`; the authoritative WordPress.org slug remains whatever the directory assigns at approval time.
 
 ## License
 
