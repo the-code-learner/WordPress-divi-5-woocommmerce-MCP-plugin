@@ -25,7 +25,7 @@ jobs:
         with:
           php-version: '7.4'
           coverage: none
-          tools: composer:v2, wp-cli
+          tools: composer:v2
 
       - name: Validate Composer metadata
         run: composer validate --strict
@@ -48,28 +48,24 @@ jobs:
       - name: Install production dependencies
         run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
 
-      - name: Install dist-archive command
-        run: wp package install wp-cli/dist-archive-command:@stable
-
       - name: Build distributable ZIP
-        run: |
-          mkdir -p build
-          wp dist-archive . build/divi-5-woocommerce-mcp.zip
-          mkdir -p build/plugin
-          unzip -q build/divi-5-woocommerce-mcp.zip -d build/plugin
+        run: bash scripts/build-zip.sh
 
-      - name: Verify excluded development files
+      - name: Verify distributable contents
         run: |
-          test ! -e build/plugin/divi-5-woocommerce-mcp/.github
-          test ! -e build/plugin/divi-5-woocommerce-mcp/tests
-          test ! -e build/plugin/divi-5-woocommerce-mcp/node_modules
-          test -e build/plugin/divi-5-woocommerce-mcp/vendor
-          test -e build/plugin/divi-5-woocommerce-mcp/divi-5-woocommerce-mcp.php
+          test ! -e build/divi-5-woocommerce-mcp/.github
+          test ! -e build/divi-5-woocommerce-mcp/tests
+          test ! -e build/divi-5-woocommerce-mcp/scripts
+          test ! -e build/divi-5-woocommerce-mcp/node_modules
+          test ! -e build/divi-5-woocommerce-mcp/vendor/bin
+          test -e build/divi-5-woocommerce-mcp/vendor
+          test -e build/divi-5-woocommerce-mcp/divi-5-woocommerce-mcp.php
+          test -f build/divi-5-woocommerce-mcp.zip
 
       - name: WordPress Plugin Check
         uses: wordpress/plugin-check-action@v1
         with:
-          build-dir: './build/plugin/divi-5-woocommerce-mcp'
+          build-dir: './build/divi-5-woocommerce-mcp'
           categories: |
             general
             plugin_repo

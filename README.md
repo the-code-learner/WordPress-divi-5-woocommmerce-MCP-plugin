@@ -39,6 +39,7 @@ assets/
   js/
 languages/
 tests/
+scripts/
 .github/workflows/
 ```
 
@@ -116,13 +117,13 @@ The development checkout is not the WordPress.org package. Production builds mus
 
 ## Build
 
-The CI workflow uses WP-CLI `dist-archive`, which honors `.distignore`, to build:
+CI and release jobs run `scripts/build-zip.sh`. The script stages a production package with `rsync`, applies `.distignore` as the exclusion source, and creates:
 
 ```text
 build/divi-5-woocommerce-mcp.zip
 ```
 
-Development-only files such as `.github/`, `tests/`, local tooling configuration, and dependency caches are excluded from the distributable.
+Development-only files such as `.github/`, `tests/`, `scripts/`, local tooling configuration, `vendor/bin/`, and dependency caches are excluded from the distributable. The WordPress.org deployment action also honors `.distignore`, so the GitHub ZIP and SVN deployment share the same distribution boundary.
 
 ## Versioning and release
 
