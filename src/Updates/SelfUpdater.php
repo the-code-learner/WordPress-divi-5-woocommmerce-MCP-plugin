@@ -27,10 +27,10 @@ final class SelfUpdater {
 	 * @return array<string, bool|string|null>
 	 */
 	public static function get_status(): array {
-		$enabled          = GitHubUpdater::is_enabled();
-		$current_version  = Version::NUMBER;
+		$enabled           = GitHubUpdater::is_enabled();
+		$current_version   = Version::NUMBER;
 		$available_version = null;
-		$plugin_basename  = plugin_basename( DIVI5_WC_MCP_FILE );
+		$plugin_basename   = plugin_basename( DIVI5_WC_MCP_FILE );
 
 		if ( $enabled ) {
 			$update = GitHubUpdater::force_check();
@@ -53,10 +53,10 @@ final class SelfUpdater {
 		Logger::record(
 			self::STATUS_ACTION,
 			array(
-				'user_id'            => get_current_user_id(),
-				'current_version'    => $current_version,
-				'available_version'  => $available_version,
-				'update_available'   => null !== $available_version,
+				'user_id'                => get_current_user_id(),
+				'current_version'        => $current_version,
+				'available_version'      => $available_version,
+				'update_available'       => null !== $available_version,
 				'github_updates_enabled' => $enabled,
 			)
 		);
@@ -221,10 +221,10 @@ final class SelfUpdater {
 
 	private static function candidate_error_message( string $error_code ): string {
 		$messages = array(
-			'no_update_available'      => 'No newer stable release is available.',
-			'invalid_release_version'  => 'The detected release version is not an accepted stable version.',
-			'invalid_plugin_target'    => 'The detected update does not target this plugin.',
-			'invalid_update_source'    => 'The detected update package is not the allowed release asset.',
+			'no_update_available'     => 'No newer stable release is available.',
+			'invalid_release_version' => 'The detected release version is not an accepted stable version.',
+			'invalid_plugin_target'   => 'The detected update does not target this plugin.',
+			'invalid_update_source'   => 'The detected update package is not the allowed release asset.',
 		);
 
 		return isset( $messages[ $error_code ] ) ? $messages[ $error_code ] : 'The update candidate was rejected.';
