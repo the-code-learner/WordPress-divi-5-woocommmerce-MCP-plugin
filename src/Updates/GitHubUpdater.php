@@ -97,7 +97,7 @@ final class GitHubUpdater {
 	 * Verify that an update package URL points to the one allowed release asset.
 	 */
 	public static function is_release_asset_url( string $url ): bool {
-		$path = parse_url( $url, PHP_URL_PATH );
+		$path = preg_replace( '/[?#].*$/', '', $url );
 
 		if ( ! is_string( $path ) || '' === $path ) {
 			return false;
