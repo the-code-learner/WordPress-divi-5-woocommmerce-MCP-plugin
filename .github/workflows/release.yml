@@ -1,0 +1,96 @@
+name: Release and WordPress.org deploy
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build GitHub release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+          tools: composer:v2, wp-cli
+
+      - name: Install production dependencies
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+
+      - name: Validate tag version
+        shell: bash
+        run: |
+          export TAG_VERSION="${GITHUB_REF_NAME#v}"
+          composer run validate-version
+
+      - name: Install dist-archive command
+        run: wp package install wp-cli/dist-archive-command:@stable
+
+      - name: Build distributable ZIP
+        run: |
+          mkdir -p build
+          wp dist-archive . build/divi-5-woocommerce-mcp.zip
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            build/divi-5-woocommerce-mcp.zip \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes
+
+  wordpress-org:
+    name: Deploy to WordPress.org
+    needs: release
+    if: ${{ vars.WORDPRESS_ORG_DEPLOY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    environment: wordpress-production
+
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+
+      - name: Guard WordPress.org configuration
+        env:
+          WORDPRESS_ORG_SLUG: ${{ vars.WORDPRESS_ORG_SLUG }}
+        shell: bash
+        run: |
+          test -n "${WORDPRESS_ORG_SLUG}" || {
+            echo "WORDPRESS_ORG_SLUG must be set after WordPress.org approval."
+            exit 1
+          }
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install production dependencies
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+
+      - name: Validate tag version
+        shell: bash
+        run: |
+          export TAG_VERSION="${GITHUB_REF_NAME#v}"
+          composer run validate-version
+
+      - name: Deploy tag to WordPress.org SVN
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: ${{ vars.WORDPRESS_ORG_SLUG }}

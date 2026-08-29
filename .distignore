@@ -1,0 +1,16 @@
+/.git
+/.github
+/.wordpress-org
+/tests
+/vendor/bin
+/node_modules
+/build
+.distignore
+.gitignore
+.gitattributes
+CONTRIBUTING.md
+phpcs.xml.dist
+phpunit.xml.dist
+composer.lock
+package-lock.json
+package.json

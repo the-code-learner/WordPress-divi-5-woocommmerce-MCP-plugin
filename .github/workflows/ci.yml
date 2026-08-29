@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'bootstrap/**'
+      - 'feature/**'
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: PHP, tests, build, Plugin Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+          tools: composer:v2, wp-cli
+
+      - name: Validate Composer metadata
+        run: composer validate --strict
+
+      - name: Install development dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Version consistency
+        run: composer run validate-version
+
+      - name: PHP syntax
+        run: composer run lint:syntax
+
+      - name: WordPress coding standards
+        run: composer run lint
+
+      - name: Unit tests
+        run: composer run test
+
+      - name: Install production dependencies
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+
+      - name: Install dist-archive command
+        run: wp package install wp-cli/dist-archive-command:@stable
+
+      - name: Build distributable ZIP
+        run: |
+          mkdir -p build
+          wp dist-archive . build/divi-5-woocommerce-mcp.zip
+          mkdir -p build/plugin
+          unzip -q build/divi-5-woocommerce-mcp.zip -d build/plugin
+
+      - name: Verify excluded development files
+        run: |
+          test ! -e build/plugin/divi-5-woocommerce-mcp/.github
+          test ! -e build/plugin/divi-5-woocommerce-mcp/tests
+          test ! -e build/plugin/divi-5-woocommerce-mcp/node_modules
+          test -e build/plugin/divi-5-woocommerce-mcp/vendor
+          test -e build/plugin/divi-5-woocommerce-mcp/divi-5-woocommerce-mcp.php
+
+      - name: WordPress Plugin Check
+        uses: wordpress/plugin-check-action@v1
+        with:
+          build-dir: './build/plugin/divi-5-woocommerce-mcp'
+          categories: |
+            general
+            plugin_repo
+            security
+
+      - name: Upload distributable
+        uses: actions/upload-artifact@v4
+        with:
+          name: divi-5-woocommerce-mcp
+          path: build/divi-5-woocommerce-mcp.zip
+          if-no-files-found: error
