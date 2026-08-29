@@ -17,7 +17,7 @@ final class VersionTest extends TestCase {
 		self::assertMatchesRegularExpression( '/^\d+\.\d+\.\d+$/', Version::NUMBER );
 	}
 
-	public function test_bootstrap_version(): void {
-		self::assertSame( '0.1.0', Version::NUMBER );
+	public function test_current_version(): void {
+		self::assertSame( '0.1.1', Version::NUMBER );
 	}
 }
