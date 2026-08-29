@@ -2,7 +2,7 @@
 
 A WordPress plugin project for exposing controlled WordPress, Divi 5, WooCommerce, preview, and publishing capabilities to MCP clients.
 
-> **Status:** early bootstrap (`0.1.0`). The repository structure, dependency model, security boundaries, CI, release checks, and WordPress.org deployment path are being established. This is not yet a production-ready Divi automation engine.
+> **Status:** early foundation (`0.1.2`). The repository includes the MCP bootstrap, GitHub release updater, privacy-preserving pre-WordPress.org telemetry/error reporting, CI, release checks, and WordPress.org deployment guardrails. This is not yet a production-ready Divi automation engine.
 
 ## Requirements
 
@@ -14,24 +14,28 @@ A WordPress plugin project for exposing controlled WordPress, Divi 5, WooCommerc
 
 ## Architecture
 
-The plugin is designed to be self-contained for WordPress.org distribution:
+The plugin is designed to be self-contained for its core MCP functionality and future WordPress.org distribution:
 
 - PHP + WordPress APIs on the server.
 - The WordPress Abilities API as the capability registry.
 - The official `wordpress/mcp-adapter` package as the MCP bridge.
 - Jetpack Autoloader to reduce dependency-version conflicts with other plugins.
 - Browser-side JavaScript/CSS for future preview and DOM/CSS inspection features.
-- No required Playwright, Puppeteer, Chromium, Node daemon, Docker service, or SaaS at runtime.
+- No required Playwright, Puppeteer, Chromium, Node daemon, Docker service, or external SaaS service for MCP operation.
+- A temporary Cloudflare Workers telemetry receiver for pre-WordPress.org usage/error reporting; both client features can be disabled independently.
 
 Current source layout:
 
 ```text
 src/
+  Admin/
   Audit/
   Divi/
   MCP/
   Preview/
   Security/
+  Telemetry/
+  Updates/
   WooCommerce/
   WordPress/
 assets/
@@ -43,7 +47,22 @@ scripts/
 .github/workflows/
 ```
 
-The initial implementation exposes a read-only status Ability so the project has a real integration seam while keeping Divi-specific write behavior out of the bootstrap commit.
+The current implementation exposes a read-only status Ability so the project has a real integration seam while keeping Divi-specific write behavior out of the foundation releases.
+
+## Telemetry and privacy during GitHub distribution
+
+Version `0.1.2` introduces two settings under **Settings > MCP Bridge** that are separate from the GitHub updater:
+
+- Usage telemetry — enabled by default during the temporary pre-WordPress.org GitHub distribution, with opt-out.
+- Automatic error reporting — enabled by default during the temporary pre-WordPress.org GitHub distribution, with opt-out.
+
+Usage telemetry sends only a random local installation ID, plugin version, WordPress version, PHP major/minor version, and Divi/WooCommerce detection booleans. The first heartbeat is delayed by at least one day and later heartbeats are scheduled approximately weekly with bounded jitter.
+
+Automatic reporting is restricted to fatal errors originating inside this plugin. Client-side sanitization removes URLs, email addresses, absolute paths, query fragments, and common token/password/authorization/cookie patterns. Stack information is limited to plugin-owned relative paths and at most ten frames.
+
+The client payload allowlists do not include site/home URL, domain, administrator email, usernames/user IDs, post/page/product/order/customer content, database values, cookies, request bodies, tokens/secrets, or arbitrary plugin/theme lists. HTTP sends use a short timeout and `blocking=false` so receiver failures do not block WordPress requests.
+
+**WordPress.org handoff requirement:** before submission, both telemetry controls must be changed to disabled-by-default explicit opt-in and the privacy/readme disclosure must be reviewed against the current Plugin Directory requirements.
 
 ## Security model
 
@@ -74,7 +93,10 @@ Preview is expected to use real WordPress rendering in a browser context. Respon
 - [x] Divi and WooCommerce runtime detection.
 - [x] Read-only status Ability.
 - [x] CI, distributable ZIP workflow, and WordPress.org deployment guardrails.
+- [x] Temporary GitHub release updater.
+- [x] Pre-WordPress.org telemetry/error-reporting client and private receiver.
 - [ ] Confirm final WordPress.org slug and contributor username before submission.
+- [ ] Switch telemetry/error reporting to explicit opt-in before WordPress.org submission.
 
 ### WordPress abilities
 
@@ -127,7 +149,7 @@ Development-only files such as `.github/`, `tests/`, `scripts/`, local tooling c
 
 ## Versioning and release
 
-This project uses SemVer (`MAJOR.MINOR.PATCH`). Version `0.1.0` is centralized in `src/Version.php` and is checked against the plugin header and `readme.txt` stable tag.
+This project uses SemVer (`MAJOR.MINOR.PATCH`). Version `0.1.2` is centralized in `src/Version.php` and is checked against the plugin header and `readme.txt` stable tag.
 
 Release flow:
 
@@ -149,14 +171,17 @@ Before enabling deployment:
 
 1. Create and verify a WordPress.org account.
 2. Replace the contributor placeholder in `readme.txt` with the exact public WordPress.org username.
-3. Keep `Tested up to` aligned with the WordPress version exercised by CI and real compatibility testing.
-4. Build the production ZIP and run Plugin Check/readme validation.
-5. Submit the ZIP through the WordPress.org Plugin Developer submission flow.
-6. Address review feedback.
-7. After approval and SVN assignment, configure GitHub secrets `SVN_USERNAME` and `SVN_PASSWORD`.
-8. Set repository variable `WORDPRESS_ORG_SLUG` to the assigned slug.
-9. Set `WORDPRESS_ORG_DEPLOY_ENABLED=true`.
-10. Configure GitHub Environment `wordpress-production` with a required reviewer/manual approval before the first deploy.
+3. Remove the temporary GitHub updater, external Update URI, and updater dependency from the WordPress.org package path.
+4. Change usage telemetry and automatic error reporting to disabled-by-default explicit opt-in.
+5. Re-review telemetry privacy disclosure and endpoint behavior against current Plugin Directory requirements.
+6. Keep `Tested up to` aligned with the WordPress version exercised by CI and real compatibility testing.
+7. Build the production ZIP and run Plugin Check/readme validation.
+8. Submit the ZIP through the WordPress.org Plugin Developer submission flow.
+9. Address review feedback.
+10. After approval and SVN assignment, configure GitHub secrets `SVN_USERNAME` and `SVN_PASSWORD`.
+11. Set repository variable `WORDPRESS_ORG_SLUG` to the assigned slug.
+12. Set `WORDPRESS_ORG_DEPLOY_ENABLED=true`.
+13. Configure GitHub Environment `wordpress-production` with a required reviewer/manual approval before the first deploy.
 
 The provisional distribution slug is `mcp-bridge-for-divi-woocommerce`; the authoritative WordPress.org slug remains whatever the directory assigns at approval time.
 

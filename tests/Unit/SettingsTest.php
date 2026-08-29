@@ -23,4 +23,11 @@ final class SettingsTest extends TestCase {
 		self::assertFalse( Settings::sanitize_github_updates_enabled( false ) );
 		self::assertFalse( Settings::sanitize_github_updates_enabled( null ) );
 	}
+
+	public function test_telemetry_settings_default_sanitizers_support_opt_out(): void {
+		self::assertTrue( Settings::sanitize_usage_telemetry_enabled( '1' ) );
+		self::assertFalse( Settings::sanitize_usage_telemetry_enabled( '0' ) );
+		self::assertTrue( Settings::sanitize_error_reporting_enabled( true ) );
+		self::assertFalse( Settings::sanitize_error_reporting_enabled( false ) );
+	}
 }

@@ -14,6 +14,25 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Browser-based preview and DOM/CSS inspection.
 - Revision-aware publish gate and persistent audit logging.
 
+## [0.1.2] - 2026-08-30
+
+### Added
+
+- Separate Settings > MCP Bridge controls for usage telemetry and automatic error reporting.
+- Random local installation identifier used only for telemetry pseudonymization.
+- Delayed first heartbeat and approximately weekly one-shot heartbeat scheduling with bounded jitter.
+- Non-blocking telemetry HTTP client with short timeout, zero redirects, and strict per-endpoint payload allowlists.
+- Client-side redaction for URLs, email addresses, absolute paths, query fragments, and common secret/token patterns.
+- Automatic fatal-error reporting restricted to errors originating from this plugin, with plugin-relative stack information only.
+- WordPress privacy-policy helper disclosure for the current telemetry behavior.
+- Unit coverage for opt-out behavior, payload minimization, installation identity generation, sanitization, plugin-file ownership, and scheduling bounds.
+
+### Changed
+
+- Bumped the plugin version to `0.1.2`.
+- For the temporary pre-WordPress.org GitHub distribution, usage telemetry and automatic error reporting are enabled by default with independent administrator opt-out controls.
+- Documented the mandatory migration of both telemetry controls to disabled-by-default explicit opt-in before WordPress.org submission.
+
 ## [0.1.1] - 2026-08-29
 
 ### Added
