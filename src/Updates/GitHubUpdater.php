@@ -31,7 +31,7 @@ final class GitHubUpdater {
 	private static $checker = null;
 
 	public static function boot(): void {
-		if ( ! self::is_enabled() ) {
+		if ( null !== self::$checker || ! self::is_enabled() ) {
 			return;
 		}
 
@@ -61,6 +61,49 @@ final class GitHubUpdater {
 		}
 
 		self::$checker = $checker;
+	}
+
+	/**
+	 * Force a real remote update check through Plugin Update Checker.
+	 *
+	 * @return object|null Available update metadata, or null when no update is available.
+	 */
+	public static function force_check() {
+		if ( ! self::is_enabled() ) {
+			return null;
+		}
+
+		if ( null === self::$checker ) {
+			self::boot();
+		}
+
+		if ( ! is_object( self::$checker ) || ! method_exists( self::$checker, 'checkForUpdates' ) ) {
+			return null;
+		}
+
+		return self::$checker->checkForUpdates();
+	}
+
+	/**
+	 * Return the request-scoped checker instance.
+	 *
+	 * @return object|null
+	 */
+	public static function get_checker() {
+		return self::$checker;
+	}
+
+	/**
+	 * Verify that an update package URL points to the one allowed release asset.
+	 */
+	public static function is_release_asset_url( string $url ): bool {
+		$path = preg_replace( '/[?#].*$/', '', $url );
+
+		if ( ! is_string( $path ) || '' === $path ) {
+			return false;
+		}
+
+		return 1 === preg_match( self::RELEASE_ASSET_PATTERN, basename( $path ) );
 	}
 
 	/**

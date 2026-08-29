@@ -49,4 +49,22 @@ final class GitHubUpdaterTest extends TestCase {
 
 		self::assertSame( array(), $filtered );
 	}
+
+	public function test_only_exact_distribution_asset_name_is_accepted(): void {
+		self::assertTrue(
+			GitHubUpdater::is_release_asset_url(
+				'https://github.com/the-code-learner/WordPress-divi-5-woocommmerce-MCP-plugin/releases/download/v0.1.3/mcp-bridge-for-divi-woocommerce.zip'
+			)
+		);
+		self::assertFalse(
+			GitHubUpdater::is_release_asset_url(
+				'https://example.test/releases/plugin.zip'
+			)
+		);
+		self::assertFalse(
+			GitHubUpdater::is_release_asset_url(
+				'https://example.test/releases/mcp-bridge-for-divi-woocommerce-beta.zip'
+			)
+		);
+	}
 }
