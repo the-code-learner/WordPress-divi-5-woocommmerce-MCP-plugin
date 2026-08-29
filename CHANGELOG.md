@@ -14,6 +14,26 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Browser-based preview and DOM/CSS inspection.
 - Revision-aware publish gate and persistent audit logging.
 
+## [0.1.3] - 2026-08-30
+
+### Added
+
+- Read-only `divi5-woocommerce-mcp/get-update-status` Ability that forces a fresh stable GitHub release check for this plugin.
+- Permission-gated `divi5-woocommerce-mcp/update-self` Ability for updating only this plugin.
+- Structured update results with current, available, target, installed, success, and sanitized error fields.
+- Audit events for update checks and self-update outcomes.
+- Unit coverage for expected-version compare-and-swap, prerelease/downgrade rejection, plugin target isolation, and exact release asset enforcement.
+
+### Security
+
+- Self-update accepts no plugin path, package URL, source repository, or arbitrary installer input from MCP clients.
+- Installation requires the WordPress `update_plugins` capability and an `expected_version` that exactly matches the freshly detected release.
+- Candidate validation rejects prerelease versions, downgrades, other plugin basenames, and packages whose filename is not exactly `mcp-bridge-for-divi-woocommerce.zip`.
+
+### Changed
+
+- Bumped the plugin version to `0.1.3`.
+
 ## [0.1.2] - 2026-08-30
 
 ### Added
