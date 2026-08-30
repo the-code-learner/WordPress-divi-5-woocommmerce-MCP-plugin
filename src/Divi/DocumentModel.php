@@ -138,7 +138,7 @@ final class DocumentModel {
 				),
 				'authoring'             => array(
 					'schema_available'  => null !== $descriptor,
-					'clean_break_write' => 'unavailable',
+					'clean_break_write' => null !== $descriptor ? 'supported' : 'unavailable',
 				),
 			);
 
