@@ -222,8 +222,8 @@ final class RuntimeModuleRegistry {
 	}
 
 	/**
-	 * @param array<string, mixed>               $node Runtime schema fragment.
-	 * @param array<string, mixed>               $defaults Runtime defaults.
+	 * @param array<string, mixed>                $node Runtime schema fragment.
+	 * @param array<string, mixed>                $defaults Runtime defaults.
 	 * @param array<string, array<string, mixed>> $parameters Normalized parameters.
 	 */
 	private static function discover_attr_names( array $node, array $defaults, array &$parameters ): void {
@@ -248,12 +248,12 @@ final class RuntimeModuleRegistry {
 
 	/**
 	 * @param array<string, mixed> $schema Runtime schema fragment.
-	 * @param mixed                $default Default value.
+	 * @param mixed                $default_value Default value.
 	 * @return array<string, mixed>
 	 */
-	private static function normalize_parameter( string $semantic_path, string $native_path, array $schema, $default, string $source ): array {
+	private static function normalize_parameter( string $semantic_path, string $native_path, array $schema, $default_value, string $source ): array {
 		$devices       = self::discover_keys( $schema, array( 'desktop', 'tablet', 'phone' ) );
-		$default_keys  = is_array( $default ) ? self::discover_keys( $default, array( 'desktop', 'tablet', 'phone' ) ) : array();
+		$default_keys  = is_array( $default_value ) ? self::discover_keys( $default_value, array( 'desktop', 'tablet', 'phone' ) ) : array();
 		$devices       = array_values( array_unique( array_merge( $devices, $default_keys ) ) );
 		$component     = isset( $schema['component'] ) && is_array( $schema['component'] ) ? $schema['component'] : array();
 		$features      = isset( $schema['features'] ) && is_array( $schema['features'] ) ? $schema['features'] : array();
@@ -271,7 +271,7 @@ final class RuntimeModuleRegistry {
 			'native_path'          => $native_path,
 			'native_provenance'    => $source,
 			'type'                 => self::infer_type( $schema, $component, $features ),
-			'default'              => $default,
+			'default'              => $default_value,
 			'enum'                 => isset( $schema['enum'] ) && is_array( $schema['enum'] ) ? array_values( $schema['enum'] ) : array(),
 			'constraints'          => $constraints,
 			'allowed_units'        => $allowed_units,
@@ -281,8 +281,8 @@ final class RuntimeModuleRegistry {
 			'hover'                => self::feature_status( $schema, array( 'hover' ) ),
 			'sticky'               => self::feature_status( $schema, array( 'sticky' ) ),
 			'preset_support'       => self::feature_status( $schema, array( 'preset' ) ),
-			'design_variable'      => self::feature_status( $schema, array( 'designVariable', 'designVariables', 'variable' ) ),
-			'global_value_support' => self::feature_status( $schema, array( 'global', 'globalValue', 'globalValues' ) ),
+			'design_variable'      => self::feature_status( $schema, array( 'designVariable', 'designVariables' ) ),
+			'global_value_support' => self::feature_status( $schema, array( 'globalValue', 'globalValues' ) ),
 		);
 	}
 
