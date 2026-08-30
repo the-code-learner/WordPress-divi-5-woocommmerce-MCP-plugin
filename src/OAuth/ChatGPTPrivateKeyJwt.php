@@ -10,11 +10,11 @@ declare(strict_types=1);
 namespace CodeLearner\Divi5WooCommerceMCP\OAuth;
 
 final class ChatGPTPrivateKeyJwt {
-	private const ASSERTION_TYPE = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
-	private const JWKS_URL       = 'https://chatgpt.com/oauth/jwks.json';
-	private const JWKS_CACHE_KEY = 'divi5_wc_mcp_chatgpt_jwks_v1';
+	private const ASSERTION_TYPE          = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
+	private const JWKS_URL                = 'https://chatgpt.com/oauth/jwks.json';
+	private const JWKS_CACHE_KEY          = 'divi5_wc_mcp_chatgpt_jwks_v1';
 	private const MAX_ASSERTION_LIFETIME = 600;
-	private const CLOCK_SKEW = 60;
+	private const CLOCK_SKEW              = 60;
 
 	/**
 	 * Register a token-endpoint preflight before the upstream OAuth router.
@@ -312,13 +312,14 @@ final class ChatGPTPrivateKeyJwt {
 			return null;
 		}
 
-		$rsa_body = self::asn1_integer( $n ) . self::asn1_integer( $e );
-		$rsa_key  = "\x30" . self::asn1_length( strlen( $rsa_body ) ) . $rsa_body;
+		$rsa_body             = self::asn1_integer( $n ) . self::asn1_integer( $e );
+		$rsa_key              = "\x30" . self::asn1_length( strlen( $rsa_body ) ) . $rsa_body;
 		$algorithm_identifier = "\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01\x05\x00";
-		$bit_string = "\x03" . self::asn1_length( strlen( $rsa_key ) + 1 ) . "\x00" . $rsa_key;
-		$spki_body  = $algorithm_identifier . $bit_string;
-		$spki       = "\x30" . self::asn1_length( strlen( $spki_body ) ) . $spki_body;
+		$bit_string           = "\x03" . self::asn1_length( strlen( $rsa_key ) + 1 ) . "\x00" . $rsa_key;
+		$spki_body            = $algorithm_identifier . $bit_string;
+		$spki                 = "\x30" . self::asn1_length( strlen( $spki_body ) ) . $spki_body;
 
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- DER public-key bytes must be base64-encoded for standard PEM serialization; no executable code is encoded.
 		return "-----BEGIN PUBLIC KEY-----\n" . chunk_split( base64_encode( $spki ), 64, "\n" ) . "-----END PUBLIC KEY-----\n";
 	}
 
@@ -341,7 +342,7 @@ final class ChatGPTPrivateKeyJwt {
 
 		$encoded = '';
 		while ( $length > 0 ) {
-			$encoded = chr( $length & 0xff ) . $encoded;
+			$encoded  = chr( $length & 0xff ) . $encoded;
 			$length >>= 8;
 		}
 
@@ -354,6 +355,7 @@ final class ChatGPTPrivateKeyJwt {
 			$value .= str_repeat( '=', 4 - $remainder );
 		}
 
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- JOSE/JWK values use base64url encoding by specification; this decodes data, not executable code.
 		$decoded = base64_decode( strtr( $value, '-_', '+/' ), true );
 		return false === $decoded ? null : $decoded;
 	}
