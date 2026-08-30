@@ -110,14 +110,39 @@ final class SelfUpdater {
 			return self::failure( $from_version, $target_version, 'upgrader_unavailable', 'WordPress plugin upgrader is unavailable.' );
 		}
 
-		$skin     = new \Automatic_Upgrader_Skin();
-		$upgrader = new \Plugin_Upgrader( $skin );
-		$result   = $upgrader->upgrade(
-			$plugin_basename,
+		$activation_state  = PluginActivationState::capture( $plugin_basename );
+		$skin              = new \Automatic_Upgrader_Skin();
+		$upgrader          = new \Plugin_Upgrader( $skin );
+		$results           = $upgrader->bulk_upgrade(
+			array( $plugin_basename ),
 			array(
 				'clear_update_cache' => false,
 			)
 		);
+		$activation_error  = $activation_state->restore( $plugin_basename );
+		$installed_version = self::read_installed_version();
+
+		if ( '' !== $activation_error ) {
+			return self::failure(
+				$from_version,
+				$target_version,
+				$activation_error,
+				'WordPress could not restore the plugin activation state after the update attempt.',
+				$installed_version
+			);
+		}
+
+		if ( false === $results || ! is_array( $results ) || ! array_key_exists( $plugin_basename, $results ) ) {
+			return self::failure(
+				$from_version,
+				$target_version,
+				'upgrade_failed',
+				'WordPress could not update the plugin.',
+				$installed_version
+			);
+		}
+
+		$result = $results[ $plugin_basename ];
 
 		if ( is_wp_error( $result ) ) {
 			$error_code = sanitize_key( (string) $result->get_error_code() );
@@ -126,16 +151,22 @@ final class SelfUpdater {
 				$from_version,
 				$target_version,
 				'' !== $error_code ? 'upgrade_' . $error_code : 'upgrade_failed',
-				'WordPress could not update the plugin.'
+				'WordPress could not update the plugin.',
+				$installed_version
 			);
 		}
 
-		if ( true !== $result ) {
-			return self::failure( $from_version, $target_version, 'upgrade_failed', 'WordPress could not update the plugin.' );
+		if ( ! is_array( $result ) ) {
+			return self::failure(
+				$from_version,
+				$target_version,
+				'upgrade_failed',
+				'WordPress could not update the plugin.',
+				$installed_version
+			);
 		}
 
-		$installed_version = self::read_installed_version();
-		$success           = $target_version === $installed_version;
+		$success = $target_version === $installed_version;
 
 		if ( ! $success ) {
 			return self::failure(
@@ -159,11 +190,13 @@ final class SelfUpdater {
 		Logger::record(
 			self::UPDATE_ACTION,
 			array(
-				'user_id'           => get_current_user_id(),
-				'from_version'      => $from_version,
-				'target_version'    => $target_version,
-				'installed_version' => $installed_version,
-				'success'           => true,
+				'user_id'            => get_current_user_id(),
+				'from_version'       => $from_version,
+				'target_version'     => $target_version,
+				'installed_version'  => $installed_version,
+				'success'            => true,
+				'was_active'         => $activation_state->was_active(),
+				'was_network_active' => $activation_state->was_network_active(),
 			)
 		);
 
