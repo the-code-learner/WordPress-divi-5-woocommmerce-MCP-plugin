@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace CodeLearner\Divi5WooCommerceMCP\WordPress;
 
 use CodeLearner\Divi5WooCommerceMCP\Divi\Detector as DiviDetector;
+use CodeLearner\Divi5WooCommerceMCP\Divi\LayoutManager as DiviLayoutManager;
 use CodeLearner\Divi5WooCommerceMCP\Updates\SelfUpdater;
 use CodeLearner\Divi5WooCommerceMCP\Version;
 use CodeLearner\Divi5WooCommerceMCP\WooCommerce\Detector as WooCommerceDetector;
@@ -37,28 +38,21 @@ final class Abilities {
 			'divi5-woocommerce-mcp/get-status',
 			array(
 				'label'               => __( 'Get integration status', 'mcp-bridge-for-divi-woocommerce' ),
-				'description'         => __( 'Returns plugin, Divi 5, and WooCommerce detection status without modifying the site.', 'mcp-bridge-for-divi-woocommerce' ),
+				'description'         => __( 'Returns plugin, Divi 5, native Divi authoring, and WooCommerce detection status without modifying the site.', 'mcp-bridge-for-divi-woocommerce' ),
 				'category'            => self::CATEGORY,
 				'execute_callback'    => array( self::class, 'get_status' ),
 				'permission_callback' => array( self::class, 'can_get_status' ),
 				'output_schema'       => array(
 					'type'       => 'object',
-					'required'   => array( 'plugin_version', 'divi_detected', 'woocommerce_detected' ),
+					'required'   => array( 'plugin_version', 'divi_detected', 'divi_native_authoring', 'woocommerce_detected' ),
 					'properties' => array(
-						'plugin_version'       => array( 'type' => 'string' ),
-						'divi_detected'        => array( 'type' => 'boolean' ),
-						'woocommerce_detected' => array( 'type' => 'boolean' ),
+						'plugin_version'        => array( 'type' => 'string' ),
+						'divi_detected'         => array( 'type' => 'boolean' ),
+						'divi_native_authoring' => array( 'type' => 'boolean' ),
+						'woocommerce_detected'  => array( 'type' => 'boolean' ),
 					),
 				),
-				'meta'                => array(
-					'public'       => true,
-					'show_in_rest' => false,
-					'annotations'  => array(
-						'readonly'    => true,
-						'destructive' => false,
-						'idempotent'  => true,
-					),
-				),
+				'meta'                => self::mcp_meta( true, false, true ),
 			)
 		);
 
@@ -91,15 +85,7 @@ final class Abilities {
 						'github_updates_enabled' => array( 'type' => 'boolean' ),
 					),
 				),
-				'meta'                => array(
-					'public'       => true,
-					'show_in_rest' => false,
-					'annotations'  => array(
-						'readonly'    => true,
-						'destructive' => false,
-						'idempotent'  => false,
-					),
-				),
+				'meta'                => self::mcp_meta( true, false, false ),
 			)
 		);
 
@@ -143,15 +129,7 @@ final class Abilities {
 						'error_message'     => array( 'type' => array( 'string', 'null' ) ),
 					),
 				),
-				'meta'                => array(
-					'public'       => true,
-					'show_in_rest' => false,
-					'annotations'  => array(
-						'readonly'    => false,
-						'destructive' => true,
-						'idempotent'  => false,
-					),
-				),
+				'meta'                => self::mcp_meta( false, true, false ),
 			)
 		);
 	}
@@ -163,9 +141,10 @@ final class Abilities {
 	 */
 	public static function get_status(): array {
 		return array(
-			'plugin_version'       => Version::NUMBER,
-			'divi_detected'        => DiviDetector::is_available(),
-			'woocommerce_detected' => WooCommerceDetector::is_available(),
+			'plugin_version'        => Version::NUMBER,
+			'divi_detected'         => DiviDetector::is_available(),
+			'divi_native_authoring' => DiviLayoutManager::is_native_authoring_available(),
+			'woocommerce_detected'  => WooCommerceDetector::is_available(),
 		);
 	}
 
@@ -194,6 +173,25 @@ final class Abilities {
 
 	public static function can_update_self(): bool {
 		return current_user_can( 'update_plugins' );
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function mcp_meta( bool $readonly, bool $destructive, bool $idempotent ): array {
+		return array(
+			'public'       => true,
+			'show_in_rest' => false,
+			'mcp'          => array(
+				'public' => true,
+				'type'   => 'tool',
+			),
+			'annotations'  => array(
+				'readonly'    => $readonly,
+				'destructive' => $destructive,
+				'idempotent'  => $idempotent,
+			),
+		);
 	}
 
 	private function __construct() {
