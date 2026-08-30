@@ -1,0 +1,94 @@
+name: Probe live MCP v0.1.8
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/probe-live-mcp-v0.1.8.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      BASE: https://mediumturquoise-starling-563163.hostingersite.com
+      RESOURCE: https://mediumturquoise-starling-563163.hostingersite.com/wp-json/mcp/mcp-oauth-server
+    steps:
+      - name: Probe OAuth authorization-server metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="$BASE/.well-known/oauth-authorization-server"
+          curl --fail-with-body --silent --show-error --location \
+            --connect-timeout 10 --max-time 30 \
+            -D /tmp/as.headers -o /tmp/as.json "$url"
+          echo '--- response headers ---'
+          cat /tmp/as.headers
+          echo '--- response body ---'
+          jq . /tmp/as.json
+          jq -e --arg base "$BASE" --arg resource "$RESOURCE" '
+            .issuer == $base and
+            .authorization_endpoint == ($base + "/oauth/authorize") and
+            .token_endpoint == ($base + "/oauth/token") and
+            .token_endpoint_auth_methods_supported == ["none"] and
+            .authorization_response_iss_parameter_supported == true and
+            (.protected_resources | index($resource) != null)
+          ' /tmp/as.json >/dev/null
+
+      - name: Probe path-inserted protected-resource metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="$BASE/.well-known/oauth-protected-resource/wp-json/mcp/mcp-oauth-server"
+          curl --fail-with-body --silent --show-error --location \
+            --connect-timeout 10 --max-time 30 \
+            -D /tmp/pr.headers -o /tmp/pr.json "$url"
+          echo '--- response headers ---'
+          cat /tmp/pr.headers
+          echo '--- response body ---'
+          jq . /tmp/pr.json
+          jq -e --arg base "$BASE" --arg resource "$RESOURCE" '
+            .resource == $resource and
+            (.authorization_servers | index($base) != null) and
+            (.bearer_methods_supported | index("header") != null) and
+            (.scopes_supported | index("mcp") != null)
+          ' /tmp/pr.json >/dev/null
+
+      - name: Probe root protected-resource metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="$BASE/.well-known/oauth-protected-resource"
+          curl --fail-with-body --silent --show-error --location \
+            --connect-timeout 10 --max-time 30 \
+            -D /tmp/root-pr.headers -o /tmp/root-pr.json "$url"
+          echo '--- response headers ---'
+          cat /tmp/root-pr.headers
+          echo '--- response body ---'
+          jq . /tmp/root-pr.json
+
+      - name: Probe unauthenticated MCP initialize challenge
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"live-probe","version":"1.0.0"}}}'
+          status="$(curl --silent --show-error --location \
+            --connect-timeout 10 --max-time 30 \
+            -X POST "$RESOURCE" \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json, text/event-stream' \
+            --data "$payload" \
+            -D /tmp/mcp.headers -o /tmp/mcp.body \
+            -w '%{http_code}')"
+          echo "HTTP status: $status"
+          echo '--- response headers ---'
+          cat /tmp/mcp.headers
+          echo '--- response body ---'
+          cat /tmp/mcp.body
+          echo
+          test "$status" = '401'
+          grep -qi '^www-authenticate: Bearer ' /tmp/mcp.headers
+          grep -qi 'resource_metadata=' /tmp/mcp.headers
