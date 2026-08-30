@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace CodeLearner\Divi5WooCommerceMCP;
 
 final class Version {
-	public const NUMBER = '0.1.8';
+	public const NUMBER = '0.1.9';
 
 	private function __construct() {
 	}
