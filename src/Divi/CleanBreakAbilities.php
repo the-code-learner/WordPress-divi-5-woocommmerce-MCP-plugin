@@ -67,7 +67,7 @@ final class CleanBreakAbilities {
 					'required'             => array( 'post_id' ),
 					'additionalProperties' => false,
 					'properties'           => array(
-						'post_id' => array(
+						'post_id'        => array(
 							'type'    => 'integer',
 							'minimum' => 1,
 						),
