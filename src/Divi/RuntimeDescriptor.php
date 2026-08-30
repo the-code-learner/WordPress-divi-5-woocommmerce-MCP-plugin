@@ -11,7 +11,7 @@ namespace CodeLearner\Divi5WooCommerceMCP\Divi;
 
 final class RuntimeDescriptor {
 	private const API_GENERATION = 'clean-break-1';
-	private const API_VERSION = '1.0.0-alpha.1';
+	private const API_VERSION    = '1.0.0-alpha.1';
 
 	/**
 	 * Describe the active Divi runtime without claiming unsupported features.
@@ -24,6 +24,36 @@ final class RuntimeDescriptor {
 		$providers    = self::providers( $modules );
 		$breakpoints  = self::breakpoints( $modules );
 		$runtime_info = self::runtime_build();
+		$capabilities = array();
+
+		$capabilities['module_discovery'] = self::capability(
+			array() !== $modules ? 'supported' : 'unknown',
+			array() !== $modules ? 'runtime block registry contains compatible Divi modules' : 'no compatible module registration was observed'
+		);
+		$capabilities['nested_modules'] = self::aggregate_module_capability( $modules, 'nested_modules' );
+		$capabilities['responsive']     = self::aggregate_module_capability( $modules, 'responsive' );
+		$capabilities['breakpoints']    = array(
+			'status'   => array() !== $breakpoints ? 'supported' : 'unknown',
+			'values'   => $breakpoints,
+			'evidence' => array() !== $breakpoints ? 'breakpoint keys observed in runtime parameter metadata/defaults' : 'runtime did not expose breakpoint keys in inspected schemas',
+		);
+		$capabilities['hover']            = self::aggregate_module_capability( $modules, 'hover' );
+		$capabilities['sticky']           = self::aggregate_module_capability( $modules, 'sticky' );
+		$capabilities['presets']          = self::aggregate_module_capability( $modules, 'presets' );
+		$capabilities['design_variables'] = self::aggregate_module_capability( $modules, 'design_variables' );
+		$capabilities['global_values']    = self::aggregate_module_capability( $modules, 'global_values' );
+		$capabilities['raw_native']       = array(
+			'read'  => self::capability( 'supported', 'module and document descriptors can include raw runtime/native data on request' ),
+			'write' => self::capability( 'unavailable', 'clean-break atomic mutation engine is not part of the read foundation milestone' ),
+		);
+		$capabilities['document_get'] = self::capability(
+			function_exists( 'parse_blocks' ) && function_exists( 'get_post' ) ? 'supported' : 'unavailable',
+			'WordPress post and block parsing APIs'
+		);
+		$capabilities['document_validate'] = self::capability( 'unavailable', 'planned next clean-break milestone' );
+		$capabilities['document_mutate']   = self::capability( 'unavailable', 'planned next clean-break milestone' );
+		$capabilities['render']            = self::capability( 'unavailable', 'real-page render primitive is not implemented in this milestone' );
+		$capabilities['inspect']           = self::capability( 'unavailable', 'DOM/computed-style inspector is not implemented in this milestone' );
 
 		return array(
 			'success'       => true,
@@ -47,36 +77,7 @@ final class RuntimeDescriptor {
 				$modules
 			),
 			'providers'     => $providers,
-			'capabilities'  => array(
-				'module_discovery' => self::capability(
-					array() !== $modules ? 'supported' : 'unknown',
-					array() !== $modules ? 'runtime block registry contains compatible Divi modules' : 'no compatible module registration was observed'
-				),
-				'nested_modules'  => self::aggregate_module_capability( $modules, 'nested_modules' ),
-				'responsive'      => self::aggregate_module_capability( $modules, 'responsive' ),
-				'breakpoints'     => array(
-					'status'   => array() !== $breakpoints ? 'supported' : 'unknown',
-					'values'   => $breakpoints,
-					'evidence' => array() !== $breakpoints ? 'breakpoint keys observed in runtime parameter metadata/defaults' : 'runtime did not expose breakpoint keys in inspected schemas',
-				),
-				'hover'           => self::aggregate_module_capability( $modules, 'hover' ),
-				'sticky'          => self::aggregate_module_capability( $modules, 'sticky' ),
-				'presets'         => self::aggregate_module_capability( $modules, 'presets' ),
-				'design_variables' => self::aggregate_module_capability( $modules, 'design_variables' ),
-				'global_values'   => self::aggregate_module_capability( $modules, 'global_values' ),
-				'raw_native'      => array(
-					'read'  => self::capability( 'supported', 'module and document descriptors can include raw runtime/native data on request' ),
-					'write' => self::capability( 'unavailable', 'clean-break atomic mutation engine is not part of the read foundation milestone' ),
-				),
-				'document_get'    => self::capability(
-					function_exists( 'parse_blocks' ) && function_exists( 'get_post' ) ? 'supported' : 'unavailable',
-					'WordPress post and block parsing APIs'
-				),
-				'document_validate' => self::capability( 'unavailable', 'planned next clean-break milestone' ),
-				'document_mutate' => self::capability( 'unavailable', 'planned next clean-break milestone' ),
-				'render'          => self::capability( 'unavailable', 'real-page render primitive is not implemented in this milestone' ),
-				'inspect'         => self::capability( 'unavailable', 'DOM/computed-style inspector is not implemented in this milestone' ),
-			),
+			'capabilities'  => $capabilities,
 			'compatibility' => array(
 				'legacy_v0_4_abilities' => 'retained-as-shims',
 				'primary_api'            => 'clean-break-runtime-document',
