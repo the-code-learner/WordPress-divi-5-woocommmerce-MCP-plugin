@@ -60,13 +60,13 @@ final class Abilities {
 									'label'      => array( 'type' => 'string' ),
 									'content'    => array( 'type' => 'string' ),
 									'attributes' => array(
-										'type'                 => 'object',
+										'type' => 'object',
 										'additionalProperties' => true,
 									),
 									'children'   => array(
 										'type'  => 'array',
 										'items' => array(
-											'type'                 => 'object',
+											'type' => 'object',
 											'additionalProperties' => true,
 										),
 									),
@@ -215,7 +215,7 @@ final class Abilities {
 	/**
 	 * @return array<string, mixed>
 	 */
-	private static function mcp_meta( bool $readonly, bool $destructive, bool $idempotent ): array {
+	private static function mcp_meta( bool $is_readonly, bool $destructive, bool $idempotent ): array {
 		return array(
 			'public'       => true,
 			'show_in_rest' => false,
@@ -224,7 +224,7 @@ final class Abilities {
 				'type'   => 'tool',
 			),
 			'annotations'  => array(
-				'readonly'    => $readonly,
+				'readonly'    => $is_readonly,
 				'destructive' => $destructive,
 				'idempotent'  => $idempotent,
 			),
