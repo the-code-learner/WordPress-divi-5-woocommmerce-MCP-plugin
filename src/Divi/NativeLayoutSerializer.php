@@ -61,6 +61,30 @@ final class NativeLayoutSerializer {
 	}
 
 	/**
+	 * Convert one semantic node for insertion into an existing native tree.
+	 *
+	 * @param array<string, mixed> $node Semantic node.
+	 */
+	public static function to_block( array $node, string $parent_block_name ): string {
+		$parent_type = self::semantic_type_for_block( $parent_block_name );
+
+		if ( null === $parent_type && 'divi/placeholder' !== $parent_block_name ) {
+			throw new InvalidArgumentException( 'The destination is not a supported semantic Divi container.' );
+		}
+
+		return self::serialize_node( $node, $parent_type );
+	}
+
+	/**
+	 * Return the semantic type represented by a native Divi block name.
+	 */
+	public static function semantic_type_for_block( string $block_name ): ?string {
+		$type = array_search( $block_name, self::MODULES, true );
+
+		return is_string( $type ) ? $type : null;
+	}
+
+	/**
 	 * @param array<string, mixed> $node Semantic node.
 	 * @param string|null          $parent_type Parent semantic type.
 	 */

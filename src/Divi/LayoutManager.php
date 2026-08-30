@@ -190,6 +190,246 @@ final class LayoutManager {
 	}
 
 	/**
+	 * Insert one constrained semantic node into an existing native Divi tree.
+	 *
+	 * @param array<string, mixed> $node Semantic module node.
+	 * @return array<string, mixed>
+	 */
+	public static function insert_semantic_module( int $post_id, string $parent_path, int $index, array $node ): array {
+		$state = self::editable_tree( $post_id );
+
+		if ( isset( $state['error'] ) && is_array( $state['error'] ) ) {
+			return $state['error'];
+		}
+
+		$blocks = $state['blocks'];
+		$parent = BlockTreeEditor::get( $blocks, $parent_path );
+
+		if ( null === $parent ) {
+			return self::failure( $post_id, 'parent_not_found', 'No block exists at the requested destination parent path.' );
+		}
+
+		$parent_name = $parent['blockName'] ?? null;
+
+		if ( ! is_string( $parent_name ) ) {
+			return self::failure( $post_id, 'invalid_parent', 'The destination path does not identify a Divi container.' );
+		}
+
+		try {
+			$sanitized       = self::sanitize_layout( array( $node ) );
+			$serialized_node = NativeLayoutSerializer::to_block( $sanitized[0], $parent_name );
+			$parsed_node     = parse_blocks( $serialized_node );
+
+			if ( 1 !== count( $parsed_node ) || ! is_array( $parsed_node[0] ) ) {
+				return self::failure( $post_id, 'module_serialization_failed', 'The semantic module did not produce exactly one native Divi block.' );
+			}
+
+			$blocks = BlockTreeEditor::insert( $blocks, $parent_path, $index, $parsed_node[0] );
+		} catch ( Throwable $throwable ) {
+			return self::failure( $post_id, 'invalid_structure_operation', $throwable->getMessage() );
+		}
+
+		$inserted_name = $parsed_node[0]['blockName'] ?? '';
+
+		return self::persist_structural_edit(
+			$post_id,
+			$blocks,
+			'insert',
+			array(
+				'parent_path'   => $parent_path,
+				'updated_path'  => $parent_path . '.' . $index,
+				'updated_block' => is_string( $inserted_name ) ? $inserted_name : '',
+			)
+		);
+	}
+
+	/**
+	 * Delete one native Divi module from a draft tree.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function delete_module( int $post_id, string $path ): array {
+		$state = self::editable_tree( $post_id );
+
+		if ( isset( $state['error'] ) && is_array( $state['error'] ) ) {
+			return $state['error'];
+		}
+
+		$block = BlockTreeEditor::get( $state['blocks'], $path );
+
+		if ( null === $block ) {
+			return self::failure( $post_id, 'module_not_found', 'No block exists at the requested module path.' );
+		}
+
+		$block_name = $block['blockName'] ?? null;
+
+		if ( ! self::is_semantic_native_block_name( $block_name ) ) {
+			return self::failure( $post_id, 'not_a_divi5_module', 'The requested path does not identify an editable native Divi 5 module.' );
+		}
+
+		try {
+			$blocks = BlockTreeEditor::delete( $state['blocks'], $path );
+		} catch ( Throwable $throwable ) {
+			return self::failure( $post_id, 'invalid_structure_operation', $throwable->getMessage() );
+		}
+
+		return self::persist_structural_edit(
+			$post_id,
+			$blocks,
+			'delete',
+			array(
+				'source_path'   => $path,
+				'updated_block' => $block_name,
+			)
+		);
+	}
+
+	/**
+	 * Move or reorder one native Divi module.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function move_module( int $post_id, string $path, string $parent_path, int $index ): array {
+		return self::relocate_module( $post_id, $path, $parent_path, $index, false );
+	}
+
+	/**
+	 * Duplicate one native Divi module.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function duplicate_module( int $post_id, string $path, string $parent_path, int $index ): array {
+		return self::relocate_module( $post_id, $path, $parent_path, $index, true );
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function relocate_module( int $post_id, string $path, string $parent_path, int $index, bool $duplicate ): array {
+		$state = self::editable_tree( $post_id );
+
+		if ( isset( $state['error'] ) && is_array( $state['error'] ) ) {
+			return $state['error'];
+		}
+
+		$block  = BlockTreeEditor::get( $state['blocks'], $path );
+		$parent = BlockTreeEditor::get( $state['blocks'], $parent_path );
+
+		if ( null === $block ) {
+			return self::failure( $post_id, 'module_not_found', 'No block exists at the requested source module path.' );
+		}
+
+		if ( null === $parent ) {
+			return self::failure( $post_id, 'parent_not_found', 'No block exists at the requested destination parent path.' );
+		}
+
+		$block_name  = $block['blockName'] ?? null;
+		$parent_name = $parent['blockName'] ?? null;
+
+		if ( ! self::is_semantic_native_block_name( $block_name ) || ! is_string( $parent_name ) ) {
+			return self::failure( $post_id, 'not_a_divi5_module', 'The source or destination does not identify a native Divi 5 module.' );
+		}
+
+		try {
+			$source_parent_path = BlockTreeEditor::parent_path( $path );
+
+			if ( $source_parent_path !== $parent_path && ! ModuleRegistry::allows_child( $parent_name, $block_name ) ) {
+				return self::failure( $post_id, 'invalid_parent_child', 'The destination module does not accept this Divi child module type.' );
+			}
+
+			$blocks = $duplicate
+				? BlockTreeEditor::duplicate( $state['blocks'], $path, $parent_path, $index )
+				: BlockTreeEditor::move( $state['blocks'], $path, $parent_path, $index );
+		} catch ( Throwable $throwable ) {
+			return self::failure( $post_id, 'invalid_structure_operation', $throwable->getMessage() );
+		}
+
+		return self::persist_structural_edit(
+			$post_id,
+			$blocks,
+			$duplicate ? 'duplicate' : 'move',
+			array(
+				'source_path'   => $path,
+				'parent_path'   => $parent_path,
+				'updated_path'  => $parent_path . '.' . $index,
+				'updated_block' => $block_name,
+			)
+		);
+	}
+
+	/**
+	 * Load a validated draft block tree for structural editing.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function editable_tree( int $post_id ): array {
+		if ( ! self::is_native_authoring_available() ) {
+			return array( 'error' => self::failure( $post_id, 'divi5_native_authoring_unavailable', 'Divi 5 native block APIs are not available on this site.' ) );
+		}
+
+		$post = get_post( $post_id );
+
+		if ( ! $post ) {
+			return array( 'error' => self::failure( $post_id, 'post_not_found', 'The requested post does not exist.' ) );
+		}
+
+		if ( ! in_array( (string) $post->post_status, array( 'draft', 'pending', 'auto-draft' ), true ) ) {
+			return array( 'error' => self::failure( $post_id, 'draft_required', 'Divi structure writes are restricted to draft or pending content.' ) );
+		}
+
+		$blocks = parse_blocks( (string) $post->post_content );
+
+		if ( 0 === self::count_divi_blocks( $blocks ) ) {
+			return array( 'error' => self::failure( $post_id, 'native_layout_required', 'The post does not contain an editable native Divi 5 layout.' ) );
+		}
+
+		return array(
+			'post'   => $post,
+			'blocks' => $blocks,
+		);
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 * @param array<string, mixed>             $metadata Operation metadata.
+	 * @return array<string, mixed>
+	 */
+	private static function persist_structural_edit( int $post_id, array $blocks, string $operation, array $metadata ): array {
+		$serialized = serialize_blocks( $blocks );
+
+		if ( ! self::is_usable_native_content( $serialized ) ) {
+			return self::failure( $post_id, 'invalid_native_layout', 'The operation would leave the post without a usable native Divi 5 layout.' );
+		}
+
+		$revision_id = self::save_revision( $post_id );
+		$updated_id  = wp_update_post(
+			array(
+				'ID'           => $post_id,
+				'post_content' => wp_slash( $serialized ),
+			),
+			true
+		);
+
+		if ( is_wp_error( $updated_id ) ) {
+			return self::failure( $post_id, 'post_update_failed', $updated_id->get_error_message() );
+		}
+
+		update_post_meta( $post_id, '_et_pb_use_builder', 'on' );
+		clean_post_cache( $post_id );
+
+		$result                 = self::inspect( $post_id );
+		$result['revision_id']  = $revision_id;
+		$result['write_method'] = 'native-block-structure-' . $operation;
+		$result['operation']    = $operation;
+
+		foreach ( $metadata as $key => $value ) {
+			$result[ $key ] = $value;
+		}
+
+		return $result;
+	}
+
+	/**
 	 * @param array<int, mixed> $layout Raw semantic layout.
 	 * @return array<int, array<string, mixed>>
 	 */

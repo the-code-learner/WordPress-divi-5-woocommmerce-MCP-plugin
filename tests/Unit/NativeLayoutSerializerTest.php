@@ -102,5 +102,27 @@ namespace CodeLearner\Divi5WooCommerceMCP\Tests\Unit {
 			self::assertTrue( LayoutManager::is_semantic_native_block_name( 'divi/section' ) );
 			self::assertTrue( LayoutManager::is_semantic_native_block_name( 'divi/button' ) );
 		}
+
+		public function test_serializes_one_node_for_a_real_destination_parent(): void {
+			$block = NativeLayoutSerializer::to_block(
+				array(
+					'type'    => 'button',
+					'content' => 'Launch',
+				),
+				'divi/column'
+			);
+
+			self::assertStringContainsString( '<!-- wp:divi/button ', $block );
+			self::assertStringContainsString( '"text":"Launch"', $block );
+		}
+
+		public function test_rejects_single_node_insert_into_wrong_parent(): void {
+			$this->expectException( InvalidArgumentException::class );
+
+			NativeLayoutSerializer::to_block(
+				array( 'type' => 'text' ),
+				'divi/section'
+			);
+		}
 	}
 }
