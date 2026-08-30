@@ -3,7 +3,7 @@
  * Plugin Name: MCP Bridge for Divi 5 and WooCommerce
  * Plugin URI: https://github.com/the-code-learner/WordPress-divi-5-woocommmerce-MCP-plugin
  * Description: Secure MCP foundations for WordPress, Divi 5, WooCommerce, preview, and publishing workflows.
- * Version: 0.3.2
+ * Version: 0.4.0
  * Update URI: https://github.com/the-code-learner/WordPress-divi-5-woocommmerce-MCP-plugin
  * Requires at least: 6.9
  * Requires PHP: 7.4
