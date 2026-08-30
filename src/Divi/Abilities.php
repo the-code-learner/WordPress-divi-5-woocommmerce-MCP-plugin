@@ -35,7 +35,7 @@ final class Abilities {
 			'divi5-woocommerce-mcp/divi-save-layout',
 			array(
 				'label'               => __( 'Save semantic layout as native Divi 5 modules', 'mcp-bridge-for-divi-woocommerce' ),
-				'description'         => __( 'Replaces draft content with a constrained semantic Divi layout. Core Divi shortcodes are generated and converted through Divi 5 official Conversion::maybeConvertContent(), producing native Visual Builder blocks instead of a single HTML blob.', 'mcp-bridge-for-divi-woocommerce' ),
+				'description'         => __( 'Replaces draft content with a constrained semantic Divi layout. The official Divi 5 converter is used first; unsupported shortcode fallbacks are rejected and replaced with validated native Visual Builder blocks.', 'mcp-bridge-for-divi-woocommerce' ),
 				'category'            => self::CATEGORY,
 				'execute_callback'    => array( self::class, 'save_layout' ),
 				'permission_callback' => array( self::class, 'can_edit_post' ),

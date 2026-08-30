@@ -3,7 +3,7 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 0.2.0
+Stable tag: 0.2.1
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -14,7 +14,9 @@ Secure MCP access for WordPress with native Divi 5 authoring, OAuth, controlled 
 
 MCP Bridge for Divi 5 and WooCommerce builds on the WordPress Abilities API and the official WordPress MCP Adapter.
 
-Version 0.2.0 adds the first native Divi 5 authoring surface. When Divi 5 is available, authenticated MCP clients can inspect a page's native Divi block tree, replace draft content from a constrained semantic layout, and patch the attribute object of an existing native Divi block. Semantic layouts are first represented with supported core Divi shortcodes and then passed through Divi 5's own `Conversion::maybeConvertContent()` API so saved content uses native Divi 5 blocks that remain editable in the Visual Builder.
+Version 0.2.1 fixes native authoring on Divi runtimes where the official converter is available but returns the backward-compatible `divi/shortcode-module` wrapper because core conversion outlines are not loaded in the MCP request. The writer still uses `Conversion::maybeConvertContent()` first, rejects shortcode fallbacks, and then uses a constrained native block serializer for the verified Section, Row, Column, Text, Button, Image, Code, and Divider schema.
+
+Version 0.2.0 added the first native Divi 5 authoring surface. When Divi 5 is available, authenticated MCP clients can inspect a page's native Divi block tree, replace draft content from a constrained semantic layout, and patch the attribute object of an existing native Divi block.
 
 The initial semantic layout vocabulary supports sections, rows, columns, Text, Button, Image, Code, and Divider modules. The lower-level module patch ability can update the native Divi 5 attribute object returned by layout inspection, enabling design settings such as typography, spacing, sizing, backgrounds, responsive values, links, presets, and other attributes supported by the installed Divi version.
 
@@ -38,7 +40,7 @@ The plugin exposes these bridge abilities through the WordPress MCP Adapter gate
 * `divi5-woocommerce-mcp/get-update-status` - fresh stable GitHub release check.
 * `divi5-woocommerce-mcp/update-self` - update only this plugin to an exact discovered stable version.
 * `divi5-woocommerce-mcp/divi-get-layout` - inspect the native Divi 5 block tree and block paths.
-* `divi5-woocommerce-mcp/divi-save-layout` - replace draft content with a semantic layout converted by Divi into native blocks.
+* `divi5-woocommerce-mcp/divi-save-layout` - replace draft content with a semantic layout saved as validated native Divi 5 blocks.
 * `divi5-woocommerce-mcp/divi-update-module` - patch one native Divi 5 block's attributes by the path returned from `divi-get-layout`.
 
 == Installation ==
@@ -57,7 +59,7 @@ The GitHub source checkout requires Composer and is not itself the production pa
 
 = Are pages created with the Divi abilities editable in the Visual Builder? =
 
-Yes, when Divi 5's native conversion API is available. `divi-save-layout` converts supported semantic modules through Divi's own conversion layer and saves native `wp:divi/*` blocks instead of wrapping the entire design in one HTML/Text module.
+Yes. `divi-save-layout` uses Divi's own conversion layer first and rejects `divi/shortcode-module` fallbacks. If the installed Divi runtime has not loaded its core conversion outlines in the MCP request, the plugin serializes the same constrained vocabulary directly into native `wp:divi/*` blocks.
 
 = Can MCP edit an already existing native Divi 5 module? =
 
@@ -85,13 +87,19 @@ Yes. `divi5-woocommerce-mcp/update-self` can update only this plugin, requires t
 
 = Is this plugin production ready? =
 
-No. Version 0.2.0 is an early development release. Native Divi editing is intentionally conservative and draft-first while the supported semantic module surface expands.
+No. Version 0.2.1 is an early development release. Native Divi editing is intentionally conservative and draft-first while the supported semantic module surface expands.
 
 == Screenshots ==
 
 Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
+
+= 0.2.1 =
+* Reject `divi/shortcode-module` as a successful native conversion or editable native module.
+* Fall back to constrained native Divi 5 block serialization when the official converter has not loaded core conversion outlines in the MCP request.
+* Count only semantic Divi 5 modules during layout inspection.
+* Add regression coverage for the verified native Section/Row/Column/Text/Button schema and fallback rejection.
 
 = 0.2.0 =
 * Add native Divi 5 layout inspection through `divi-get-layout`.

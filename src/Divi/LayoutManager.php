@@ -84,12 +84,18 @@ final class LayoutManager {
 			$shortcodes       = LayoutSerializer::to_shortcode( $sanitized_layout );
 			$conversion_class = self::CONVERSION_CLASS;
 			$native_content   = $conversion_class::maybeConvertContent( $shortcodes, true, $post_id );
+			$write_method     = 'divi5-official-conversion';
+
+			if ( ! self::is_usable_native_content( $native_content ) ) {
+				$native_content = NativeLayoutSerializer::to_blocks( $sanitized_layout );
+				$write_method   = 'divi5-native-block-fallback';
+			}
 		} catch ( Throwable $throwable ) {
 			return self::failure( $post_id, 'layout_conversion_failed', $throwable->getMessage() );
 		}
 
-		if ( ! is_string( $native_content ) || false === strpos( $native_content, '<!-- wp:divi/' ) ) {
-			return self::failure( $post_id, 'layout_conversion_failed', 'Divi did not return native Divi 5 block content for this layout.' );
+		if ( ! self::is_usable_native_content( $native_content ) ) {
+			return self::failure( $post_id, 'layout_conversion_failed', 'The generated layout did not contain editable semantic Divi 5 blocks.' );
 		}
 
 		$native_content = self::ensure_placeholder_wrapper( $native_content );
@@ -111,7 +117,7 @@ final class LayoutManager {
 
 		$result                 = self::inspect( $post_id );
 		$result['revision_id']  = $revision_id;
-		$result['write_method'] = 'divi5-official-conversion';
+		$result['write_method'] = $write_method;
 
 		return $result;
 	}
@@ -151,7 +157,7 @@ final class LayoutManager {
 
 		$block_name = $block['blockName'] ?? null;
 
-		if ( ! is_string( $block_name ) || 0 !== strpos( $block_name, 'divi/' ) || 'divi/placeholder' === $block_name ) {
+		if ( ! self::is_semantic_native_block_name( $block_name ) ) {
 			return self::failure( $post_id, 'not_a_divi5_module', 'The requested path does not identify an editable native Divi 5 module.' );
 		}
 
@@ -257,7 +263,7 @@ final class LayoutManager {
 		foreach ( $blocks as $block ) {
 			$name = $block['blockName'] ?? null;
 
-			if ( is_string( $name ) && 0 === strpos( $name, 'divi/' ) && 'divi/placeholder' !== $name ) {
+			if ( self::is_semantic_native_block_name( $name ) ) {
 				++$count;
 			}
 
@@ -267,6 +273,30 @@ final class LayoutManager {
 		}
 
 		return $count;
+	}
+
+	/**
+	 * Whether a block is an editable semantic Divi 5 module.
+	 *
+	 * @param mixed $block_name Parsed block name.
+	 */
+	public static function is_semantic_native_block_name( $block_name ): bool {
+		return is_string( $block_name )
+			&& 0 === strpos( $block_name, 'divi/' )
+			&& ! in_array( $block_name, array( 'divi/placeholder', 'divi/shortcode-module' ), true );
+	}
+
+	/**
+	 * Confirm that content contains semantic blocks and no shortcode fallback.
+	 *
+	 * @param mixed $content Converted or serialized content.
+	 */
+	private static function is_usable_native_content( $content ): bool {
+		if ( ! is_string( $content ) || false !== strpos( $content, '<!-- wp:divi/shortcode-module' ) ) {
+			return false;
+		}
+
+		return self::count_divi_blocks( parse_blocks( $content ) ) > 0;
 	}
 
 	/**
