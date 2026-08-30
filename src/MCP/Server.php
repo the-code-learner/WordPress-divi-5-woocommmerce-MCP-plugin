@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace CodeLearner\Divi5WooCommerceMCP\MCP;
 
+use CodeLearner\Divi5WooCommerceMCP\OAuth\Bootstrap as OAuthBootstrap;
 use WP\MCP\Core\McpAdapter;
 
 final class Server {
@@ -18,6 +19,7 @@ final class Server {
 			return;
 		}
 
+		OAuthBootstrap::boot();
 		McpAdapter::instance();
 	}
 

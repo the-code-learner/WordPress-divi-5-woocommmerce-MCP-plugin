@@ -14,6 +14,28 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Browser-based preview and DOM/CSS inspection.
 - Revision-aware publish gate and persistent audit logging.
 
+## [0.1.4] - 2026-08-30
+
+### Added
+
+- OAuth 2.1 authorization-code support for MCP clients through an additional `/wp-json/mcp/mcp-oauth-server` endpoint.
+- PKCE S256, Client ID Metadata Document discovery, bearer access tokens, refresh-token rotation, revocation, and WordPress-user binding through the MCP OAuth layer.
+- ChatGPT-oriented authorization-server discovery that advertises `offline_access` while preserving the `mcp` scope.
+- CI validation that the tested `wp-media/mcp-oauth` develop dependency resolves to the reviewed revision `d6b1aa1a3b09212719b2a2e3e0979ec5e7010b93`.
+- Unit coverage for HTTPS enforcement and OAuth discovery metadata.
+
+### Security
+
+- OAuth endpoints are disabled unless the canonical WordPress Site Address uses HTTPS.
+- WordPress Application Password material remains internal to the OAuth session implementation and is never placed in MCP URLs or exposed to clients.
+- The existing WordPress-authenticated MCP server remains available; OAuth is additive and does not introduce an unauthenticated MCP transport.
+- Authorization-server discovery requires PKCE S256 and public-client token authentication (`none`) and exposes refresh/revocation metadata without client secrets.
+
+### Changed
+
+- Bumped the plugin version to `0.1.4`.
+- Kept the official `wordpress/mcp-adapter` runtime at 0.6.1 while explicitly validating source compatibility with the OAuth transport integration.
+
 ## [0.1.3] - 2026-08-30
 
 ### Added

@@ -3,10 +3,17 @@
   "description": "WordPress, Divi 5 and WooCommerce capabilities exposed through the official WordPress MCP Adapter.",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/wp-media/mcp-oauth"
+    }
+  ],
   "require": {
     "php": ">=7.4",
     "automattic/jetpack-autoloader": "^5.0",
-    "wordpress/mcp-adapter": "^0.6.1",
+    "wordpress/mcp-adapter": "0.6.1 as 0.5.99",
+    "wp-media/mcp-oauth": "dev-develop",
     "yahnis-elsts/plugin-update-checker": "^5.7"
   },
   "require-dev": {
@@ -32,13 +39,17 @@
     "optimize-autoloader": true,
     "sort-packages": true
   },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
   "scripts": {
     "lint": "phpcs --standard=phpcs.xml.dist",
     "lint:syntax": "find src tests -name '*.php' -print0 | xargs -0 -n1 php -l && php -l divi-5-woocommerce-mcp.php",
     "test": "phpunit --configuration phpunit.xml.dist",
+    "validate-oauth-dependency": "php tests/validate-oauth-dependency.php",
     "validate-version": "php tests/validate-version.php",
     "check": [
       "@validate-version",
+      "@validate-oauth-dependency",
       "@lint:syntax",
       "@lint",
       "@test"
