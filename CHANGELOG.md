@@ -14,6 +14,27 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Browser-based preview and DOM/CSS inspection.
 - Revision-aware publish gate and persistent audit logging.
 
+## [0.3.0] - 2026-08-30
+
+### Added
+
+- Runtime discovery of registered native Divi modules and detailed per-module schemas, supports, defaults, and nesting constraints.
+- Native structural abilities to insert constrained semantic modules and delete, move, reorder, or deep-duplicate inspected modules.
+- A block-tree editor that preserves WordPress child serialization slots while rejecting invalid paths, indexes, self-descendant moves, and unsupported parent/child relationships.
+
+### Security
+
+- Structural writes remain restricted to editable draft, pending, or auto-draft content and never accept arbitrary block names.
+- Cross-container edits are validated against core Section/Row/Column rules, registered block constraints, and verified Divi nested-module relationships.
+
+### Changed
+
+- Bumped the plugin version to `0.3.0`.
+
+### Tests
+
+- Added regression coverage for structural tree mutations, hierarchy gates, single-node native serialization, ability schemas, and MCP exposure.
+
 ## [0.2.2] - 2026-08-30
 
 ### Fixed

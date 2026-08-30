@@ -3,7 +3,7 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 0.2.2
+Stable tag: 0.3.0
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -13,6 +13,8 @@ Secure MCP access for WordPress with native Divi 5 authoring, OAuth, controlled 
 == Description ==
 
 MCP Bridge for Divi 5 and WooCommerce builds on the WordPress Abilities API and the official WordPress MCP Adapter.
+
+Version 0.3.0 adds runtime discovery for every native Divi module registered on the site, including per-module block schemas and Divi default attributes. Draft layouts can now be edited structurally by inserting constrained semantic modules, deleting modules, moving or reordering modules, and deep-duplicating modules with their nested children and design attributes. Every operation uses paths from live layout inspection, validates the destination hierarchy, requests a revision, and preserves the native Divi block format.
 
 Version 0.2.2 preserves the plugin's site or network activation state during MCP self-updates. The updater now follows WordPress's bulk update path, restores the original activation scope if an update attempt changes it, and reports a failure instead of returning success when reactivation cannot be verified.
 
@@ -44,6 +46,12 @@ The plugin exposes these bridge abilities through the WordPress MCP Adapter gate
 * `divi5-woocommerce-mcp/divi-get-layout` - inspect the native Divi 5 block tree and block paths.
 * `divi5-woocommerce-mcp/divi-save-layout` - replace draft content with a semantic layout saved as validated native Divi 5 blocks.
 * `divi5-woocommerce-mcp/divi-update-module` - patch one native Divi 5 block's attributes by the path returned from `divi-get-layout`.
+* `divi5-woocommerce-mcp/divi-list-modules` - list native Divi modules registered by the active runtime.
+* `divi5-woocommerce-mcp/divi-get-module-schema` - inspect one registered module's attributes, defaults, supports, and nesting constraints.
+* `divi5-woocommerce-mcp/divi-insert-module` - insert a constrained semantic module at a validated parent path and child index.
+* `divi5-woocommerce-mcp/divi-delete-module` - delete one native module without permitting removal of the root or last usable layout.
+* `divi5-woocommerce-mcp/divi-move-module` - move or reorder a native module with final-index semantics.
+* `divi5-woocommerce-mcp/divi-duplicate-module` - deep-copy a module, its children, and its native design attributes.
 
 == Installation ==
 
@@ -89,13 +97,20 @@ Yes. `divi5-woocommerce-mcp/update-self` can update only this plugin, requires t
 
 = Is this plugin production ready? =
 
-No. Version 0.2.2 is an early development release. Native Divi editing is intentionally conservative and draft-first while the supported semantic module surface expands.
+No. Version 0.3.0 is an early development release. Native Divi editing is intentionally conservative and draft-first while the supported semantic module surface expands.
 
 == Screenshots ==
 
 Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
+
+= 0.3.0 =
+* Discover the complete native Divi module registry and inspect per-module runtime schemas and defaults.
+* Insert constrained semantic modules into existing native Divi layouts.
+* Delete, move, reorder, and deep-duplicate inspected native modules with validated hierarchy rules.
+* Preserve revisions, draft-only writes, native block serialization, and Visual Builder state across structural edits.
+* Add regression coverage for block tree operations, hierarchy validation, schemas, and public MCP exposure.
 
 = 0.2.2 =
 * Preserve site and multisite network activation across MCP self-update attempts.

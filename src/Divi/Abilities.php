@@ -112,6 +112,99 @@ final class Abilities {
 				'meta'                => self::mcp_meta( false, true, false ),
 			)
 		);
+
+		wp_register_ability(
+			'divi5-woocommerce-mcp/divi-list-modules',
+			array(
+				'label'               => __( 'List registered Divi 5 modules', 'mcp-bridge-for-divi-woocommerce' ),
+				'description'         => __( 'Lists the native Divi 5 block modules registered by the active Divi runtime, including attribute names and verified nested-module relationships.', 'mcp-bridge-for-divi-woocommerce' ),
+				'category'            => self::CATEGORY,
+				'execute_callback'    => array( self::class, 'list_modules' ),
+				'permission_callback' => array( self::class, 'can_read_modules' ),
+				'input_schema'        => array(
+					'type'                 => 'object',
+					'additionalProperties' => false,
+					'properties'           => array(),
+				),
+				'output_schema'       => self::module_registry_output_schema(),
+				'meta'                => self::mcp_meta( true, false, true ),
+			)
+		);
+
+		wp_register_ability(
+			'divi5-woocommerce-mcp/divi-get-module-schema',
+			array(
+				'label'               => __( 'Get a registered Divi 5 module schema', 'mcp-bridge-for-divi-woocommerce' ),
+				'description'         => __( 'Returns the runtime WordPress block attribute schema, Divi default attributes, supports, and nested-module constraints for one registered native Divi module.', 'mcp-bridge-for-divi-woocommerce' ),
+				'category'            => self::CATEGORY,
+				'execute_callback'    => array( self::class, 'get_module_schema' ),
+				'permission_callback' => array( self::class, 'can_read_modules' ),
+				'input_schema'        => array(
+					'type'                 => 'object',
+					'required'             => array( 'module_name' ),
+					'additionalProperties' => false,
+					'properties'           => array(
+						'module_name' => array(
+							'type'    => 'string',
+							'pattern' => '^divi/[a-z0-9-]+$',
+						),
+					),
+				),
+				'output_schema'       => self::module_registry_output_schema(),
+				'meta'                => self::mcp_meta( true, false, true ),
+			)
+		);
+
+		wp_register_ability(
+			'divi5-woocommerce-mcp/divi-insert-module',
+			array(
+				'label'               => __( 'Insert a native Divi 5 module', 'mcp-bridge-for-divi-woocommerce' ),
+				'description'         => __( 'Inserts one constrained semantic Section, Row, Column, Text, Button, Image, Code, or Divider node at a real parent path and child index returned by layout inspection.', 'mcp-bridge-for-divi-woocommerce' ),
+				'category'            => self::CATEGORY,
+				'execute_callback'    => array( self::class, 'insert_module' ),
+				'permission_callback' => array( self::class, 'can_edit_post' ),
+				'input_schema'        => self::insert_module_input_schema(),
+				'output_schema'       => self::layout_output_schema(),
+				'meta'                => self::mcp_meta( false, true, false ),
+			)
+		);
+
+		foreach (
+			array(
+				'divi-delete-module'    => array(
+					__( 'Delete native Divi 5 module', 'mcp-bridge-for-divi-woocommerce' ),
+					__( 'Deletes one native Divi 5 module identified by a real inspection path. The root placeholder and the last usable native layout cannot be removed.', 'mcp-bridge-for-divi-woocommerce' ),
+					'delete_module',
+					false,
+				),
+				'divi-move-module'      => array(
+					__( 'Move native Divi 5 module', 'mcp-bridge-for-divi-woocommerce' ),
+					__( 'Moves or reorders one native Divi 5 module to a validated parent path and final child index.', 'mcp-bridge-for-divi-woocommerce' ),
+					'move_module',
+					true,
+				),
+				'divi-duplicate-module' => array(
+					__( 'Duplicate native Divi 5 module', 'mcp-bridge-for-divi-woocommerce' ),
+					__( 'Deep-copies one native Divi 5 module, including nested child modules and design attributes, into a validated destination.', 'mcp-bridge-for-divi-woocommerce' ),
+					'duplicate_module',
+					true,
+				),
+			) as $ability_name => $definition
+		) {
+			wp_register_ability(
+				'divi5-woocommerce-mcp/' . $ability_name,
+				array(
+					'label'               => $definition[0],
+					'description'         => $definition[1],
+					'category'            => self::CATEGORY,
+					'execute_callback'    => array( self::class, $definition[2] ),
+					'permission_callback' => array( self::class, 'can_edit_post' ),
+					'input_schema'        => $definition[3] ? self::relocate_module_input_schema() : self::module_path_input_schema(),
+					'output_schema'       => self::layout_output_schema(),
+					'meta'                => self::mcp_meta( false, true, false ),
+				)
+			);
+		}
 	}
 
 	/**
@@ -148,6 +241,73 @@ final class Abilities {
 
 	/**
 	 * @param array<string, mixed> $input Ability input.
+	 * @return array<string, mixed>
+	 */
+	public static function list_modules( array $input ): array {
+		unset( $input );
+
+		return ModuleRegistry::catalog();
+	}
+
+	/**
+	 * @param array<string, mixed> $input Ability input.
+	 * @return array<string, mixed>
+	 */
+	public static function get_module_schema( array $input ): array {
+		return ModuleRegistry::schema( (string) $input['module_name'] );
+	}
+
+	/**
+	 * @param array<string, mixed> $input Ability input.
+	 * @return array<string, mixed>
+	 */
+	public static function insert_module( array $input ): array {
+		$module = isset( $input['module'] ) && is_array( $input['module'] ) ? $input['module'] : array();
+
+		return LayoutManager::insert_semantic_module(
+			(int) $input['post_id'],
+			(string) $input['parent_path'],
+			(int) $input['index'],
+			$module
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $input Ability input.
+	 * @return array<string, mixed>
+	 */
+	public static function delete_module( array $input ): array {
+		return LayoutManager::delete_module( (int) $input['post_id'], (string) $input['path'] );
+	}
+
+	/**
+	 * @param array<string, mixed> $input Ability input.
+	 * @return array<string, mixed>
+	 */
+	public static function move_module( array $input ): array {
+		return LayoutManager::move_module(
+			(int) $input['post_id'],
+			(string) $input['path'],
+			(string) $input['parent_path'],
+			(int) $input['index']
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $input Ability input.
+	 * @return array<string, mixed>
+	 */
+	public static function duplicate_module( array $input ): array {
+		return LayoutManager::duplicate_module(
+			(int) $input['post_id'],
+			(string) $input['path'],
+			(string) $input['parent_path'],
+			(int) $input['index']
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $input Ability input.
 	 */
 	public static function can_edit_post( array $input ): bool {
 		$post_id = isset( $input['post_id'] ) ? (int) $input['post_id'] : 0;
@@ -163,6 +323,15 @@ final class Abilities {
 	}
 
 	/**
+	 * @param array<string, mixed> $input Ability input.
+	 */
+	public static function can_read_modules( array $input ): bool {
+		unset( $input );
+
+		return current_user_can( 'edit_posts' );
+	}
+
+	/**
 	 * @return array<string, mixed>
 	 */
 	private static function post_id_input_schema(): array {
@@ -175,6 +344,127 @@ final class Abilities {
 					'type'    => 'integer',
 					'minimum' => 1,
 				),
+			),
+		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function module_path_input_schema(): array {
+		return array(
+			'type'                 => 'object',
+			'required'             => array( 'post_id', 'path' ),
+			'additionalProperties' => false,
+			'properties'           => array(
+				'post_id' => array(
+					'type'    => 'integer',
+					'minimum' => 1,
+				),
+				'path'    => self::path_schema(),
+			),
+		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function relocate_module_input_schema(): array {
+		return array(
+			'type'                 => 'object',
+			'required'             => array( 'post_id', 'path', 'parent_path', 'index' ),
+			'additionalProperties' => false,
+			'properties'           => array(
+				'post_id'     => array(
+					'type'    => 'integer',
+					'minimum' => 1,
+				),
+				'path'        => self::path_schema(),
+				'parent_path' => self::path_schema(),
+				'index'       => array(
+					'type'    => 'integer',
+					'minimum' => 0,
+				),
+			),
+		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function insert_module_input_schema(): array {
+		return array(
+			'type'                 => 'object',
+			'required'             => array( 'post_id', 'parent_path', 'index', 'module' ),
+			'additionalProperties' => false,
+			'properties'           => array(
+				'post_id'     => array(
+					'type'    => 'integer',
+					'minimum' => 1,
+				),
+				'parent_path' => self::path_schema(),
+				'index'       => array(
+					'type'    => 'integer',
+					'minimum' => 0,
+				),
+				'module'      => array(
+					'type'                 => 'object',
+					'required'             => array( 'type' ),
+					'additionalProperties' => false,
+					'properties'           => array(
+						'type'       => array(
+							'type' => 'string',
+							'enum' => array( 'section', 'row', 'column', 'text', 'button', 'image', 'code', 'divider' ),
+						),
+						'label'      => array( 'type' => 'string' ),
+						'content'    => array( 'type' => 'string' ),
+						'attributes' => array(
+							'type'                 => 'object',
+							'additionalProperties' => true,
+						),
+						'children'   => array(
+							'type'  => 'array',
+							'items' => array(
+								'type'                 => 'object',
+								'additionalProperties' => true,
+							),
+						),
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function path_schema(): array {
+		return array(
+			'type'    => 'string',
+			'pattern' => '^\\d+(?:\\.\\d+)*$',
+		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function module_registry_output_schema(): array {
+		return array(
+			'type'                 => 'object',
+			'required'             => array( 'success', 'error_code', 'error_message' ),
+			'additionalProperties' => true,
+			'properties'           => array(
+				'success'       => array( 'type' => 'boolean' ),
+				'module_count'  => array( 'type' => 'integer' ),
+				'modules'       => array(
+					'type'  => 'array',
+					'items' => array(
+						'type'                 => 'object',
+						'additionalProperties' => true,
+					),
+				),
+				'error_code'    => array( 'type' => array( 'string', 'null' ) ),
+				'error_message' => array( 'type' => array( 'string', 'null' ) ),
 			),
 		);
 	}
@@ -204,6 +494,9 @@ final class Abilities {
 				),
 				'revision_id'        => array( 'type' => array( 'integer', 'null' ) ),
 				'write_method'       => array( 'type' => 'string' ),
+				'operation'          => array( 'type' => 'string' ),
+				'source_path'        => array( 'type' => 'string' ),
+				'parent_path'        => array( 'type' => 'string' ),
 				'updated_path'       => array( 'type' => 'string' ),
 				'updated_block'      => array( 'type' => 'string' ),
 				'error_code'         => array( 'type' => array( 'string', 'null' ) ),
