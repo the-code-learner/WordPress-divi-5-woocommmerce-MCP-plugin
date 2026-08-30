@@ -3,7 +3,7 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 0.3.0
+Stable tag: 0.3.1
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -13,6 +13,8 @@ Secure MCP access for WordPress with native Divi 5 authoring, OAuth, controlled 
 == Description ==
 
 MCP Bridge for Divi 5 and WooCommerce builds on the WordPress Abilities API and the official WordPress MCP Adapter.
+
+Version 0.3.1 fixes the parameterless Divi module catalog so WordPress can pass its native `null` input value through the ability permission and execution callbacks.
 
 Version 0.3.0 adds runtime discovery for every native Divi module registered on the site, including per-module block schemas and Divi default attributes. Draft layouts can now be edited structurally by inserting constrained semantic modules, deleting modules, moving or reordering modules, and deep-duplicating modules with their nested children and design attributes. Every operation uses paths from live layout inspection, validates the destination hierarchy, requests a revision, and preserves the native Divi block format.
 
@@ -97,13 +99,17 @@ Yes. `divi5-woocommerce-mcp/update-self` can update only this plugin, requires t
 
 = Is this plugin production ready? =
 
-No. Version 0.3.0 is an early development release. Native Divi editing is intentionally conservative and draft-first while the supported semantic module surface expands.
+No. Version 0.3.1 is an early development release. Native Divi editing is intentionally conservative and draft-first while the supported semantic module surface expands.
 
 == Screenshots ==
 
 Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
+
+= 0.3.1 =
+* Accept WordPress's native null input for the parameterless `divi-list-modules` ability callbacks.
+* Add regression coverage for parameterless module discovery through the Abilities API.
 
 = 0.3.0 =
 * Discover the complete native Divi module registry and inspect per-module runtime schemas and defaults.

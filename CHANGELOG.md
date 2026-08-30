@@ -14,6 +14,20 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Browser-based preview and DOM/CSS inspection.
 - Revision-aware publish gate and persistent audit logging.
 
+## [0.3.1] - 2026-08-30
+
+### Fixed
+
+- Accept the WordPress Abilities API's native `null` input for the parameterless Divi module catalog permission and execution callbacks.
+
+### Changed
+
+- Bumped the plugin version to `0.3.1`.
+
+### Tests
+
+- Added regression coverage that executes the module catalog callback with a null ability input.
+
 ## [0.3.0] - 2026-08-30
 
 ### Added
