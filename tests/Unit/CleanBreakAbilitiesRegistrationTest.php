@@ -40,18 +40,18 @@ namespace CodeLearner\Divi5WooCommerceMCP\Tests\Unit {
 			$this->abilities = $GLOBALS['divi5_test_registered_abilities'];
 		}
 
-		public function test_registers_small_clean_break_read_surface(): void {
+		public function test_registers_small_clean_break_surface(): void {
 			$expected = array(
 				'divi5-woocommerce-mcp/divi-runtime-describe',
 				'divi5-woocommerce-mcp/divi-module-describe',
 				'divi5-woocommerce-mcp/divi-document-get',
+				'divi5-woocommerce-mcp/divi-document-validate',
+				'divi5-woocommerce-mcp/divi-document-mutate',
 			);
 
 			foreach ( $expected as $ability_name ) {
 				self::assertArrayHasKey( $ability_name, $this->abilities );
 				self::assertTrue( $this->abilities[ $ability_name ]['meta']['mcp']['public'] );
-				self::assertTrue( $this->abilities[ $ability_name ]['meta']['annotations']['readonly'] );
-				self::assertFalse( $this->abilities[ $ability_name ]['meta']['annotations']['destructive'] );
 			}
 		}
 
@@ -75,6 +75,27 @@ namespace CodeLearner\Divi5WooCommerceMCP\Tests\Unit {
 			self::assertSame( 'boolean', $schema['properties']['include_native']['type'] );
 			self::assertFalse( $schema['properties']['include_native']['default'] );
 			self::assertFalse( $schema['additionalProperties'] );
+		}
+
+		public function test_validate_is_readonly_and_mutate_is_destructive(): void {
+			$validate = $this->abilities['divi5-woocommerce-mcp/divi-document-validate'];
+			$mutate   = $this->abilities['divi5-woocommerce-mcp/divi-document-mutate'];
+
+			self::assertTrue( $validate['meta']['annotations']['readonly'] );
+			self::assertFalse( $validate['meta']['annotations']['destructive'] );
+			self::assertFalse( $mutate['meta']['annotations']['readonly'] );
+			self::assertTrue( $mutate['meta']['annotations']['destructive'] );
+			self::assertFalse( $mutate['meta']['annotations']['idempotent'] );
+		}
+
+		public function test_batch_contract_requires_snapshot_token_and_operations(): void {
+			$schema = $this->abilities['divi5-woocommerce-mcp/divi-document-validate']['input_schema'];
+
+			self::assertSame( array( 'post_id', 'document_token', 'operations' ), $schema['required'] );
+			self::assertSame( '^[a-f0-9]{64}$', $schema['properties']['document_token']['pattern'] );
+			self::assertSame( 100, $schema['properties']['operations']['maxItems'] );
+			self::assertContains( 'responsive', $schema['properties']['operations']['items']['properties']['op']['enum'] );
+			self::assertContains( 'preset', $schema['properties']['operations']['items']['properties']['op']['enum'] );
 		}
 	}
 }
