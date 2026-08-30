@@ -26,7 +26,7 @@ final class CleanBreakAbilities {
 				'execute_callback'    => array( self::class, 'runtime_describe' ),
 				'permission_callback' => array( self::class, 'can_read_runtime' ),
 				'output_schema'       => self::generic_output_schema(),
-				'meta'                => self::mcp_meta(),
+				'meta'                => self::mcp_meta( true, false, true ),
 			)
 		);
 
@@ -50,7 +50,7 @@ final class CleanBreakAbilities {
 					),
 				),
 				'output_schema'       => self::generic_output_schema(),
-				'meta'                => self::mcp_meta(),
+				'meta'                => self::mcp_meta( true, false, true ),
 			)
 		);
 
@@ -78,7 +78,35 @@ final class CleanBreakAbilities {
 					),
 				),
 				'output_schema'       => self::generic_output_schema(),
-				'meta'                => self::mcp_meta(),
+				'meta'                => self::mcp_meta( true, false, true ),
+			)
+		);
+
+		wp_register_ability(
+			'divi5-woocommerce-mcp/divi-document-validate',
+			array(
+				'label'               => __( 'Validate Divi document mutations', 'mcp-bridge-for-divi-woocommerce' ),
+				'description'         => __( 'Dry-runs an atomic semantic mutation batch against one exact Divi document snapshot without persistence.', 'mcp-bridge-for-divi-woocommerce' ),
+				'category'            => self::CATEGORY,
+				'execute_callback'    => array( self::class, 'document_validate' ),
+				'permission_callback' => array( self::class, 'can_read_document' ),
+				'input_schema'        => self::document_batch_schema(),
+				'output_schema'       => self::generic_output_schema(),
+				'meta'                => self::mcp_meta( true, false, true ),
+			)
+		);
+
+		wp_register_ability(
+			'divi5-woocommerce-mcp/divi-document-mutate',
+			array(
+				'label'               => __( 'Mutate Divi document atomically', 'mcp-bridge-for-divi-woocommerce' ),
+				'description'         => __( 'Validates a semantic mutation batch against one exact Divi document snapshot and persists it with one native block write only when the full batch is valid.', 'mcp-bridge-for-divi-woocommerce' ),
+				'category'            => self::CATEGORY,
+				'execute_callback'    => array( self::class, 'document_mutate' ),
+				'permission_callback' => array( self::class, 'can_read_document' ),
+				'input_schema'        => self::document_batch_schema(),
+				'output_schema'       => self::generic_output_schema(),
+				'meta'                => self::mcp_meta( false, true, false ),
 			)
 		);
 	}
@@ -109,6 +137,30 @@ final class CleanBreakAbilities {
 		);
 	}
 
+	/**
+	 * @param array<string, mixed> $input Ability input.
+	 * @return array<string, mixed>
+	 */
+	public static function document_validate( array $input ): array {
+		return DocumentMutationEngine::validate(
+			(int) $input['post_id'],
+			(string) $input['document_token'],
+			(array) $input['operations']
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $input Ability input.
+	 * @return array<string, mixed>
+	 */
+	public static function document_mutate( array $input ): array {
+		return DocumentMutationEngine::mutate(
+			(int) $input['post_id'],
+			(string) $input['document_token'],
+			(array) $input['operations']
+		);
+	}
+
 	public static function can_read_runtime(): bool {
 		return current_user_can( 'edit_posts' );
 	}
@@ -120,6 +172,43 @@ final class CleanBreakAbilities {
 		$post_id = isset( $input['post_id'] ) ? (int) $input['post_id'] : 0;
 
 		return $post_id > 0 && current_user_can( 'edit_post', $post_id );
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function document_batch_schema(): array {
+		return array(
+			'type'                 => 'object',
+			'required'             => array( 'post_id', 'document_token', 'operations' ),
+			'additionalProperties' => false,
+			'properties'           => array(
+				'post_id'        => array(
+					'type'    => 'integer',
+					'minimum' => 1,
+				),
+				'document_token' => array(
+					'type'    => 'string',
+					'pattern' => '^[a-f0-9]{64}$',
+				),
+				'operations'     => array(
+					'type'     => 'array',
+					'minItems' => 1,
+					'maxItems' => 100,
+					'items'    => array(
+						'type'                 => 'object',
+						'required'             => array( 'op' ),
+						'additionalProperties' => true,
+						'properties'           => array(
+							'op' => array(
+								'type' => 'string',
+								'enum' => array( 'insert', 'set', 'delete', 'move', 'duplicate', 'responsive', 'state', 'preset' ),
+							),
+						),
+					),
+				),
+			),
+		);
 	}
 
 	/**
@@ -141,7 +230,7 @@ final class CleanBreakAbilities {
 	/**
 	 * @return array<string, mixed>
 	 */
-	private static function mcp_meta(): array {
+	private static function mcp_meta( bool $readonly, bool $destructive, bool $idempotent ): array {
 		return array(
 			'public'       => true,
 			'show_in_rest' => false,
@@ -150,9 +239,9 @@ final class CleanBreakAbilities {
 				'type'   => 'tool',
 			),
 			'annotations'  => array(
-				'readonly'    => true,
-				'destructive' => false,
-				'idempotent'  => true,
+				'readonly'    => $readonly,
+				'destructive' => $destructive,
+				'idempotent'  => $idempotent,
 			),
 		);
 	}
