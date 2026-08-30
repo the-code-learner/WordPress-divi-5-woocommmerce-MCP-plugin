@@ -30,7 +30,7 @@ final class Bootstrap {
 		}
 
 		ChatGPTCimdCompatibility::register();
-		ChatGPTPrivateKeyJwt::register();
+		ResourceBinding::register();
 		OAuthServerBootstrap::instance();
 	}
 
