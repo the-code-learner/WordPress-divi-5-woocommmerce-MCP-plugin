@@ -48,6 +48,7 @@ final class DocumentModelTest extends TestCase {
 		self::assertSame( 'Tablet copy', $text['normalized_properties']['content.innerContent']['value_by_device']['tablet'] );
 		self::assertSame( 'content.innerContent', $text['normalized_properties']['content.innerContent']['native_path'] );
 		self::assertSame( 'content.innerContent.tablet.value', $text['normalized_properties']['content.innerContent']['native_value_paths']['tablet'] );
+		self::assertSame( 'supported', $text['authoring']['clean_break_write'] );
 		self::assertSame( 'Explore the framework', $button['normalized_properties']['button.innerContent.text']['value'] );
 		self::assertSame( '#system', $button['normalized_properties']['button.innerContent.linkUrl']['value'] );
 		self::assertArrayNotHasKey( 'native', $text );
