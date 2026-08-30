@@ -3,7 +3,7 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 0.1.8
+Stable tag: 0.1.9
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -13,6 +13,8 @@ Secure MCP foundations for WordPress, Divi 5, WooCommerce, browser-based preview
 == Description ==
 
 MCP Bridge for Divi 5 and WooCommerce is an early-stage plugin that builds on the WordPress Abilities API and the official WordPress MCP Adapter.
+
+Version 0.1.9 fixes a live RFC 9728 interoperability failure discovered against the development site: the path-inserted protected-resource metadata URL returned the correct JSON body with HTTP 404 because WordPress had already classified the direct well-known path as not found before the plugin intercepted it. The plugin now sends an explicit HTTP 200 for its OAuth metadata responses. OAuth discovery documents are also marked non-cacheable, including through LiteSpeed Cache's public no-cache hook, and stale metadata URLs are purged once per plugin version so old OAuth metadata or cached 404 responses cannot survive an update.
 
 Version 0.1.8 aligns ChatGPT token exchange with the public-client OAuth path implemented by the pinned OAuth server. Authorization-server metadata now advertises only `token_endpoint_auth_method=none`, which ChatGPT supports through its CIMD method intersection, so Authorization Code + PKCE can proceed without the custom `private_key_jwt` preflight. The same release validates ChatGPT's exact MCP `resource` parameter on both authorization and token requests; access tokens remain audience-bound to `/wp-json/mcp/mcp-oauth-server`.
 
@@ -89,7 +91,7 @@ Yes, for this plugin only. `divi5-woocommerce-mcp/get-update-status` forces a fr
 
 Yes. Go to Settings > MCP Bridge and disable GitHub updates. The option is enabled by default. When disabled, MCP self-update is also unavailable.
 
-= What telemetry is sent in version 0.1.8? =
+= What telemetry is sent in version 0.1.9? =
 
 A low-frequency heartbeat sends a random installation identifier, plugin version, WordPress version, PHP major/minor version, and Divi/WooCommerce detection booleans. The first heartbeat is delayed and later heartbeats are scheduled approximately weekly with jitter.
 
@@ -103,7 +105,7 @@ Yes. Usage telemetry and automatic error reporting are separate Settings > MCP B
 
 = Is the plugin production ready? =
 
-No. Version 0.1.8 is still an early development release focused on MCP foundations, OAuth interoperability, update tooling, and infrastructure for future implementation.
+No. Version 0.1.9 is still an early development release focused on MCP foundations, OAuth interoperability, update tooling, and infrastructure for future implementation.
 
 = Why is the license GPL-2.0-or-later? =
 
@@ -114,6 +116,12 @@ WordPress.org requires GPL-compatible licensing. A non-commercial restriction is
 Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
+
+= 0.1.9 =
+* Fix the RFC 9728 path-inserted protected-resource metadata response so it returns HTTP 200 instead of valid JSON under a WordPress 404 status.
+* Mark OAuth discovery metadata non-cacheable and use LiteSpeed Cache's public no-cache integration hook when available.
+* Purge only the OAuth discovery URLs once per plugin version so stale metadata and cached 404 responses do not survive an update.
+* Add regression coverage for the complete authorization-server/root/path-inserted metadata URL set.
 
 = 0.1.8 =
 * Advertise only the `none` token endpoint authentication method that the embedded OAuth server natively implements; ChatGPT supports this public-client method through CIMD negotiation.
