@@ -22,13 +22,11 @@ jobs:
         run: |
           set -euo pipefail
           url="$BASE/.well-known/oauth-authorization-server"
-          curl --fail-with-body --silent --show-error --location \
-            --connect-timeout 10 --max-time 30 \
-            -D /tmp/as.headers -o /tmp/as.json "$url"
-          echo '--- response headers ---'
+          status="$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 -D /tmp/as.headers -o /tmp/as.json -w '%{http_code}' "$url")"
+          echo "HTTP status: $status"
           cat /tmp/as.headers
-          echo '--- response body ---'
           jq . /tmp/as.json
+          test "$status" = '200'
           jq -e --arg base "$BASE" --arg resource "$RESOURCE" '
             .issuer == $base and
             .authorization_endpoint == ($base + "/oauth/authorize") and
@@ -38,57 +36,72 @@ jobs:
             (.protected_resources | index($resource) != null)
           ' /tmp/as.json >/dev/null
 
-      - name: Probe path-inserted protected-resource metadata
+      - name: Probe path-inserted protected-resource metadata cached URL
+        if: always()
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           url="$BASE/.well-known/oauth-protected-resource/wp-json/mcp/mcp-oauth-server"
-          curl --fail-with-body --silent --show-error --location \
-            --connect-timeout 10 --max-time 30 \
-            -D /tmp/pr.headers -o /tmp/pr.json "$url"
+          status="$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 -D /tmp/pr.headers -o /tmp/pr.body -w '%{http_code}' "$url")"
+          echo "HTTP status: $status"
           echo '--- response headers ---'
           cat /tmp/pr.headers
           echo '--- response body ---'
-          jq . /tmp/pr.json
-          jq -e --arg base "$BASE" --arg resource "$RESOURCE" '
+          cat /tmp/pr.body
+          echo
+
+      - name: Probe path-inserted protected-resource metadata cache-busted
+        if: always()
+        shell: bash
+        run: |
+          set -u
+          url="$BASE/.well-known/oauth-protected-resource/wp-json/mcp/mcp-oauth-server?mcp_probe=$(date +%s)"
+          status="$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 -D /tmp/prb.headers -o /tmp/prb.body -w '%{http_code}' "$url")"
+          echo "HTTP status: $status"
+          echo '--- response headers ---'
+          cat /tmp/prb.headers
+          echo '--- response body ---'
+          cat /tmp/prb.body
+          echo
+          if [ "$status" = '200' ] && jq -e --arg base "$BASE" --arg resource "$RESOURCE" '
             .resource == $resource and
             (.authorization_servers | index($base) != null) and
             (.bearer_methods_supported | index("header") != null) and
             (.scopes_supported | index("mcp") != null)
-          ' /tmp/pr.json >/dev/null
+          ' /tmp/prb.body >/dev/null 2>&1; then
+            echo 'CACHE_BUSTED_RFC9728=PASS'
+          else
+            echo 'CACHE_BUSTED_RFC9728=FAIL'
+          fi
 
       - name: Probe root protected-resource metadata
+        if: always()
         shell: bash
         run: |
-          set -euo pipefail
-          url="$BASE/.well-known/oauth-protected-resource"
-          curl --fail-with-body --silent --show-error --location \
-            --connect-timeout 10 --max-time 30 \
-            -D /tmp/root-pr.headers -o /tmp/root-pr.json "$url"
-          echo '--- response headers ---'
+          set -u
+          url="$BASE/.well-known/oauth-protected-resource?mcp_probe=$(date +%s)"
+          status="$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 -D /tmp/root-pr.headers -o /tmp/root-pr.body -w '%{http_code}' "$url")"
+          echo "HTTP status: $status"
           cat /tmp/root-pr.headers
-          echo '--- response body ---'
-          jq . /tmp/root-pr.json
+          cat /tmp/root-pr.body
+          echo
 
       - name: Probe unauthenticated MCP initialize challenge
+        if: always()
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           payload='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"live-probe","version":"1.0.0"}}}'
-          status="$(curl --silent --show-error --location \
-            --connect-timeout 10 --max-time 30 \
-            -X POST "$RESOURCE" \
-            -H 'Content-Type: application/json' \
-            -H 'Accept: application/json, text/event-stream' \
-            --data "$payload" \
-            -D /tmp/mcp.headers -o /tmp/mcp.body \
-            -w '%{http_code}')"
+          status="$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 -X POST "$RESOURCE" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' --data "$payload" -D /tmp/mcp.headers -o /tmp/mcp.body -w '%{http_code}')"
           echo "HTTP status: $status"
           echo '--- response headers ---'
           cat /tmp/mcp.headers
           echo '--- response body ---'
           cat /tmp/mcp.body
           echo
-          test "$status" = '401'
-          grep -qi '^www-authenticate: Bearer ' /tmp/mcp.headers
-          grep -qi 'resource_metadata=' /tmp/mcp.headers
+          if [ "$status" = '401' ] && grep -qi '^www-authenticate: Bearer ' /tmp/mcp.headers && grep -qi 'resource_metadata=' /tmp/mcp.headers; then
+            echo 'MCP_401_CHALLENGE=PASS'
+          else
+            echo 'MCP_401_CHALLENGE=FAIL'
+            exit 1
+          fi
