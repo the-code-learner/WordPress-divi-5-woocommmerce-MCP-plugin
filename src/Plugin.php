@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace CodeLearner\Divi5WooCommerceMCP;
 
 use CodeLearner\Divi5WooCommerceMCP\Admin\Settings;
+use CodeLearner\Divi5WooCommerceMCP\Divi\Abilities as DiviAbilities;
 use CodeLearner\Divi5WooCommerceMCP\MCP\Server;
 use CodeLearner\Divi5WooCommerceMCP\Telemetry\Telemetry;
 use CodeLearner\Divi5WooCommerceMCP\Updates\GitHubUpdater;
@@ -34,6 +35,7 @@ final class Plugin {
 		GitHubUpdater::boot();
 		Telemetry::boot();
 		Abilities::hooks();
+		DiviAbilities::hooks();
 		Server::boot();
 	}
 
