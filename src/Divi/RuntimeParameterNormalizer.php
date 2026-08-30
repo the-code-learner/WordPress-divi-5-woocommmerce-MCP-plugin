@@ -154,7 +154,7 @@ final class RuntimeParameterNormalizer {
 			'native_confidence'    => $confidence,
 			'native_value_paths'   => null !== $match ? $match['value_paths'] : array(),
 			'write_mapping'        => null !== $match && array() !== $match['value_paths'] ? 'supported' : 'unavailable',
-			'type'                 => self::infer_type( $node, $component, $features ),
+			'type'                 => self::infer_type( $node, $component, $features, $match ),
 			'default'              => $default,
 			'default_by_device'    => $value_by_device,
 			'raw_default'          => null !== $match ? $match['raw_default'] : null,
@@ -345,11 +345,12 @@ final class RuntimeParameterNormalizer {
 	}
 
 	/**
-	 * @param array<string, mixed> $node Runtime schema node.
-	 * @param array<string, mixed> $component Component metadata.
-	 * @param array<string, mixed> $features Leaf feature metadata.
+	 * @param array<string, mixed>      $node Runtime schema node.
+	 * @param array<string, mixed>      $component Component metadata.
+	 * @param array<string, mixed>      $features Leaf feature metadata.
+	 * @param array<string, mixed>|null $matched_default Runtime default match.
 	 */
-	private static function infer_type( array $node, array $component, array $features ): string {
+	private static function infer_type( array $node, array $component, array $features, ?array $matched_default ): string {
 		if ( isset( $node['type'] ) && is_string( $node['type'] ) ) {
 			return $node['type'];
 		}
@@ -364,8 +365,51 @@ final class RuntimeParameterNormalizer {
 			return 'string';
 		}
 
+		if ( null !== $matched_default && isset( $matched_default['value_by_device'] ) && is_array( $matched_default['value_by_device'] ) ) {
+			$values = $matched_default['value_by_device'];
+			$value  = array_key_exists( 'desktop', $values )
+				? $values['desktop']
+				: ( array() !== $values ? reset( $values ) : null );
+			$type   = self::value_type( $value );
+
+			if ( 'unknown' !== $type ) {
+				return $type;
+			}
+		}
+
 		if ( isset( $component['name'] ) && is_string( $component['name'] ) ) {
 			return $component['name'];
+		}
+
+		return 'unknown';
+	}
+
+	/**
+	 * @param mixed $value Runtime default value.
+	 */
+	private static function value_type( $value ): string {
+		if ( is_string( $value ) ) {
+			return 'string';
+		}
+
+		if ( is_int( $value ) ) {
+			return 'integer';
+		}
+
+		if ( is_float( $value ) ) {
+			return 'number';
+		}
+
+		if ( is_bool( $value ) ) {
+			return 'boolean';
+		}
+
+		if ( is_array( $value ) ) {
+			return 'array';
+		}
+
+		if ( null === $value ) {
+			return 'null';
 		}
 
 		return 'unknown';
