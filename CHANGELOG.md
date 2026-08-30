@@ -14,6 +14,28 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Browser-based preview and DOM/CSS inspection.
 - Revision-aware publish gate and persistent audit logging.
 
+## [0.1.6] - 2026-08-30
+
+### Added
+
+- Standards-compliant ChatGPT `private_key_jwt` client authentication for `/oauth/token` while retaining public-client authentication with `none`.
+- RS256 client-assertion verification against the fixed official ChatGPT JWKS endpoint, with exact `iss`/`sub` client binding, exact token-endpoint audience validation, bounded assertion lifetime, and clock-skew checks.
+- RFC 9728 path-inserted protected-resource metadata for the path-based `/wp-json/mcp/mcp-oauth-server` resource.
+- Authorization-server metadata advertising `private_key_jwt`, RS256 token-auth signing, and the exact protected MCP resource.
+- Cryptographic regression tests using generated 2048-bit RSA fixtures and discovery tests covering path insertion and resource binding.
+
+### Security
+
+- Signed client assertions are verified before the pinned upstream token endpoint can consume a one-time authorization code or rotating refresh token.
+- Unverified assertion claims are used only to constrain the request to HTTPS ChatGPT CIMD URLs and select the fixed ChatGPT JWKS; trust is established only after RS256 signature and claim validation.
+- JWKS fetching uses WordPress safe HTTP requests, zero redirects, a short timeout, exact-key-id matching, and a one-hour cache with refresh on key rotation.
+- RSA signing keys must be at least 2048 bits; algorithms other than RS256 are rejected.
+- Public clients without a client assertion continue through the existing `none` flow without weakening PKCE, exact redirect URI validation, token rotation, revocation, or JWT audience/issuer checks.
+
+### Changed
+
+- Bumped the plugin version to `0.1.6`.
+
 ## [0.1.5] - 2026-08-30
 
 ### Fixed
@@ -25,8 +47,8 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 
 ### Security
 
-- The compatibility layer does not add `private_key_jwt` server support or bypass CIMD validation; the authorization server continues to advertise and accept only public-client token authentication (`none`).
-- Existing upstream SSRF/DNS-rebinding protection, exact redirect-URI validation, PKCE S256, client-ID self-binding, token rotation, revocation, and WordPress-user binding remain unchanged.
+- The 0.1.5 compatibility layer did not add `private_key_jwt` server support or bypass CIMD validation; the authorization server continued to advertise and accept only public-client token authentication (`none`).
+- Existing upstream SSRF/DNS-rebinding protection, exact redirect-URI validation, PKCE S256, client-ID self-binding, token rotation, revocation, and WordPress-user binding remained unchanged.
 
 ### Changed
 
