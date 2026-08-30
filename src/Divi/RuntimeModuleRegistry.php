@@ -21,6 +21,20 @@ final class RuntimeModuleRegistry {
 		'fullwidth-module',
 	);
 
+	private const VALIDATED_VALUE_TYPES = array(
+		'string',
+		'text',
+		'html',
+		'url',
+		'divi/richtext',
+		'integer',
+		'number',
+		'boolean',
+		'array',
+		'object',
+		'null',
+	);
+
 	/**
 	 * Return every block type that can be identified as a Divi runtime module.
 	 *
@@ -197,7 +211,8 @@ final class RuntimeModuleRegistry {
 	}
 
 	/**
-	 * Keep the mutation-facing parameter list limited to runtime-proven value paths.
+	 * Keep the mutation-facing parameter list limited to runtime-proven value paths
+	 * whose value type can also be validated without guessing.
 	 * The complete introspection graph remains available in parameter_graph.
 	 *
 	 * @param array<int, array<string, mixed>> $parameters Normalized parameters.
@@ -208,6 +223,10 @@ final class RuntimeModuleRegistry {
 
 		foreach ( $parameters as $parameter ) {
 			if ( ! isset( $parameter['write_mapping'] ) || 'supported' !== $parameter['write_mapping'] ) {
+				continue;
+			}
+
+			if ( ! self::has_validated_value_contract( $parameter ) ) {
 				continue;
 			}
 
@@ -253,6 +272,25 @@ final class RuntimeModuleRegistry {
 		}
 
 		return $authoring;
+	}
+
+	/**
+	 * @param array<string, mixed> $parameter Normalized parameter.
+	 */
+	private static function has_validated_value_contract( array $parameter ): bool {
+		$type = isset( $parameter['type'] ) && is_string( $parameter['type'] )
+			? $parameter['type']
+			: 'unknown';
+
+		if ( in_array( $type, self::VALIDATED_VALUE_TYPES, true ) ) {
+			return true;
+		}
+
+		$enum = isset( $parameter['enum'] ) && is_array( $parameter['enum'] )
+			? $parameter['enum']
+			: array();
+
+		return array() !== $enum;
 	}
 
 	/**
@@ -314,7 +352,6 @@ final class RuntimeModuleRegistry {
 				if ( in_array( $value, array( 'native', 'converted', 'legacy' ), true ) ) {
 					return $value;
 				}
-			}
 		}
 
 		return 0 === strpos( $name, 'divi/' ) ? 'native' : 'unknown';
