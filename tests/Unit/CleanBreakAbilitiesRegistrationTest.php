@@ -60,12 +60,12 @@ namespace CodeLearner\Divi5WooCommerceMCP\Tests\Unit {
 		}
 
 		public function test_module_descriptor_accepts_third_party_block_namespaces(): void {
-			$schema = $this->abilities['divi5-woocommerce-mcp/divi-module-describe']['input_schema'];
+			$schema  = $this->abilities['divi5-woocommerce-mcp/divi-module-describe']['input_schema'];
 			$pattern = $schema['properties']['module_name']['pattern'];
 
 			self::assertSame( '^[a-z0-9-]+/[a-z0-9-]+$', $pattern );
-			self::assertSame( 1, preg_match( '/' . $pattern . '/', 'acme/super-card' ) );
-			self::assertSame( 1, preg_match( '/' . $pattern . '/', 'pixel-fixture/feature-box' ) );
+			self::assertSame( 1, preg_match( '~' . $pattern . '~', 'acme/super-card' ) );
+			self::assertSame( 1, preg_match( '~' . $pattern . '~', 'pixel-fixture/feature-box' ) );
 		}
 
 		public function test_document_get_supports_opt_in_raw_native_data(): void {
