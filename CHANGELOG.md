@@ -14,6 +14,25 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Browser-based preview and DOM/CSS inspection.
 - Revision-aware publish gate and persistent audit logging.
 
+## [0.1.8] - 2026-08-30
+
+### Fixed
+
+- Restored ChatGPT's token-exchange path to the upstream OAuth server's native public-client flow by advertising only `token_endpoint_auth_methods_supported: ["none"]`; ChatGPT supports this method through the intersection of its CIMD metadata with the authorization-server metadata.
+- Removed the custom `private_key_jwt` verifier from the active OAuth request path so a JWKS fetch or client-assertion validation cannot block an otherwise valid Authorization Code + PKCE exchange.
+- Added exact MCP `resource` validation on both `/oauth/authorize` and `/oauth/token`, matching the protected-resource metadata URL that the upstream token issuer already places in the access-token `aud` claim.
+- Added regression coverage for public-client metadata and exact protected-resource matching.
+
+### Security
+
+- PKCE S256, exact redirect-URI validation, CIMD self-binding, issuer identification, refresh-token rotation, revocation, WordPress-user binding, and bearer-token audience validation remain in place.
+- Resource indicators are now rejected when missing or different from the canonical `/wp-json/mcp/mcp-oauth-server` protected resource.
+- The dormant `private_key_jwt` implementation remains in the codebase for review/reference but is neither advertised nor registered in the runtime request path.
+
+### Changed
+
+- Bumped the plugin version to `0.1.8`.
+
 ## [0.1.7] - 2026-08-30
 
 ### Fixed

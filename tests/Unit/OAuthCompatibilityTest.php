@@ -11,6 +11,7 @@ namespace CodeLearner\Divi5WooCommerceMCP\Tests\Unit;
 
 use CodeLearner\Divi5WooCommerceMCP\OAuth\Bootstrap;
 use CodeLearner\Divi5WooCommerceMCP\OAuth\Discovery;
+use CodeLearner\Divi5WooCommerceMCP\OAuth\ResourceBinding;
 use PHPUnit\Framework\TestCase;
 
 final class OAuthCompatibilityTest extends TestCase {
@@ -21,7 +22,7 @@ final class OAuthCompatibilityTest extends TestCase {
 		self::assertFalse( Bootstrap::is_https_url( 'example.com' ) );
 	}
 
-	public function test_authorization_server_metadata_supports_chatgpt_refresh_and_client_auth(): void {
+	public function test_authorization_server_metadata_supports_chatgpt_refresh_and_public_pkce_client(): void {
 		$metadata = Discovery::authorization_server_metadata( 'https://example.com/', 'https://example.com/wp-json/mcp/mcp-oauth-server' );
 
 		self::assertSame( 'https://example.com', $metadata['issuer'] );
@@ -33,8 +34,8 @@ final class OAuthCompatibilityTest extends TestCase {
 		self::assertContains( 'S256', $metadata['code_challenge_methods_supported'] );
 		self::assertContains( 'mcp', $metadata['scopes_supported'] );
 		self::assertContains( 'offline_access', $metadata['scopes_supported'] );
-		self::assertSame( array( 'none', 'private_key_jwt' ), $metadata['token_endpoint_auth_methods_supported'] );
-		self::assertSame( array( 'RS256' ), $metadata['token_endpoint_auth_signing_alg_values_supported'] );
+		self::assertSame( array( 'none' ), $metadata['token_endpoint_auth_methods_supported'] );
+		self::assertArrayNotHasKey( 'token_endpoint_auth_signing_alg_values_supported', $metadata );
 		self::assertTrue( $metadata['client_id_metadata_document_supported'] );
 		self::assertTrue( $metadata['authorization_response_iss_parameter_supported'] );
 		self::assertSame( array( 'https://example.com/wp-json/mcp/mcp-oauth-server' ), $metadata['protected_resources'] );
@@ -61,5 +62,14 @@ final class OAuthCompatibilityTest extends TestCase {
 		self::assertSame( array( 'https://example.com' ), $metadata['authorization_servers'] );
 		self::assertSame( array( 'header' ), $metadata['bearer_methods_supported'] );
 		self::assertSame( array( 'mcp' ), $metadata['scopes_supported'] );
+	}
+
+	public function test_resource_binding_requires_exact_protected_resource(): void {
+		$resource = 'https://example.com/wp-json/mcp/mcp-oauth-server';
+
+		self::assertTrue( ResourceBinding::matches( $resource, $resource ) );
+		self::assertFalse( ResourceBinding::matches( '', $resource ) );
+		self::assertFalse( ResourceBinding::matches( 'https://example.com/', $resource ) );
+		self::assertFalse( ResourceBinding::matches( $resource . '/', $resource ) );
 	}
 }
