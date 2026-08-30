@@ -10,11 +10,11 @@ declare(strict_types=1);
 namespace CodeLearner\Divi5WooCommerceMCP\OAuth;
 
 final class ChatGPTPrivateKeyJwt {
-	private const ASSERTION_TYPE          = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
-	private const JWKS_URL                = 'https://chatgpt.com/oauth/jwks.json';
-	private const JWKS_CACHE_KEY          = 'divi5_wc_mcp_chatgpt_jwks_v1';
+	private const ASSERTION_TYPE         = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
+	private const JWKS_URL               = 'https://chatgpt.com/oauth/jwks.json';
+	private const JWKS_CACHE_KEY         = 'divi5_wc_mcp_chatgpt_jwks_v1';
 	private const MAX_ASSERTION_LIFETIME = 600;
-	private const CLOCK_SKEW              = 60;
+	private const CLOCK_SKEW             = 60;
 
 	/**
 	 * Register a token-endpoint preflight before the upstream OAuth router.
