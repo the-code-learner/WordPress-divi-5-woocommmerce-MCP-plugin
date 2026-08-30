@@ -63,6 +63,13 @@ final class DocumentModel {
 	}
 
 	/**
+	 * Derive the deterministic handle used by one exact document snapshot.
+	 */
+	public static function snapshot_handle( string $document_token, int $ordinal, string $name ): string {
+		return 'node-' . substr( hash( 'sha256', $document_token . '|' . $ordinal . '|' . $name ), 0, 20 );
+	}
+
+	/**
 	 * @param array<int, array<string, mixed>>    $blocks Parsed blocks.
 	 * @param array<string, array<string, mixed>> $descriptors Runtime descriptors.
 	 * @return array<int, array<string, mixed>>
@@ -90,7 +97,7 @@ final class DocumentModel {
 			}
 
 			$path       = '' === $prefix ? (string) $index : $prefix . '.' . $index;
-			$handle     = self::handle( $document_token, $ordinal, $name );
+			$handle     = self::snapshot_handle( $document_token, $ordinal, $name );
 			$descriptor = isset( $descriptors[ $name ] ) && is_array( $descriptors[ $name ] ) ? $descriptors[ $name ] : null;
 			$attrs      = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
 			$kind       = 'foreign-block';
@@ -186,10 +193,6 @@ final class DocumentModel {
 		}
 
 		return $map;
-	}
-
-	private static function handle( string $document_token, int $ordinal, string $name ): string {
-		return 'node-' . substr( hash( 'sha256', $document_token . '|' . $ordinal . '|' . $name ), 0, 20 );
 	}
 
 	private static function namespace_from_name( string $name ): string {
