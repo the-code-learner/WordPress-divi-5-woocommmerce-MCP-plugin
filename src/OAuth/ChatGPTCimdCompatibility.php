@@ -56,7 +56,7 @@ final class ChatGPTCimdCompatibility {
 		}
 
 		// Preserve CIMD self-binding: never normalize metadata for another client ID.
-		if ( $url !== (string) ( $document['client_id'] ?? '' ) ) {
+		if ( (string) ( $document['client_id'] ?? '' ) !== $url ) {
 			return $response;
 		}
 
