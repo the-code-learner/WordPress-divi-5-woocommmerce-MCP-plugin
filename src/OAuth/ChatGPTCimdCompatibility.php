@@ -71,7 +71,7 @@ final class ChatGPTCimdCompatibility {
 		}
 
 		$document['token_endpoint_auth_method'] = 'none';
-		$normalized                             = wp_json_encode( $document, JSON_UNESCAPED_SLASHES );
+		$normalized                             = json_encode( $document, JSON_UNESCAPED_SLASHES ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- deterministic JSON encoding keeps this compatibility helper independently unit-testable; the document is decoded and re-encoded without adding HTML-sensitive content.
 
 		if ( false !== $normalized ) {
 			$response['body'] = $normalized;
@@ -102,7 +102,7 @@ final class ChatGPTCimdCompatibility {
 	 * Accept only ChatGPT-hosted CIMD paths, not arbitrary chatgpt.com requests.
 	 */
 	public static function is_chatgpt_cimd_url( string $url ): bool {
-		$parts = parse_url( $url );
+		$parts = parse_url( $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- pure URL shape validation is intentionally independent of WordPress runtime for unit coverage.
 		if ( ! is_array( $parts ) ) {
 			return false;
 		}
