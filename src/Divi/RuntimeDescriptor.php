@@ -53,7 +53,7 @@ final class RuntimeDescriptor {
 
 		$capabilities['raw_native'] = array(
 			'read'  => self::capability( 'supported', 'module and document descriptors can include raw runtime/native data on request' ),
-			'write' => self::capability( 'unavailable', 'clean-break atomic mutation engine is not part of the read foundation milestone' ),
+			'write' => self::capability( 'unavailable', 'dedicated raw-native authoring remains intentionally unavailable in this semantic mutation milestone' ),
 		);
 
 		$capabilities['document_get'] = self::capability(
@@ -61,9 +61,13 @@ final class RuntimeDescriptor {
 			'WordPress post and block parsing APIs'
 		);
 
-		$capabilities['document_validate'] = self::capability( 'unavailable', 'planned next clean-break milestone' );
+		$capabilities['document_validate'] = self::capability( 'supported', 'clean-break snapshot-bound dry-run planner is registered' );
 
-		$capabilities['document_mutate'] = self::capability( 'unavailable', 'planned next clean-break milestone' );
+		$capabilities['document_mutate'] = self::capability( 'supported', 'semantic batch is fully validated in memory before one draft-gated WordPress block persistence' );
+
+		$capabilities['state_edit'] = self::capability( 'unavailable', 'runtime parameter metadata does not yet expose a proven native state-write mapping' );
+
+		$capabilities['preset_application'] = self::capability( 'unavailable', 'runtime parameter metadata does not yet expose a proven native preset-application mapping' );
 
 		$capabilities['render'] = self::capability( 'unavailable', 'real-page render primitive is not implemented in this milestone' );
 
