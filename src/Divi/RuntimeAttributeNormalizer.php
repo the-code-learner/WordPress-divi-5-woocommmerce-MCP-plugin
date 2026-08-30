@@ -72,7 +72,7 @@ final class RuntimeAttributeNormalizer {
 			return $parameter;
 		}
 
-		$evidence                       = $normalized[ $semantic ];
+		$evidence                        = $normalized[ $semantic ];
 		$parameter['native_path']        = $evidence['native_path'];
 		$parameter['native_value_paths'] = $evidence['native_value_paths'];
 		$parameter['native_provenance']  = $evidence['native_provenance'];
