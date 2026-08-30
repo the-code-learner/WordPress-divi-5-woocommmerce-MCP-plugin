@@ -45,9 +45,11 @@
     "lint": "phpcs --standard=phpcs.xml.dist",
     "lint:syntax": "find src tests -name '*.php' -print0 | xargs -0 -n1 php -l && php -l divi-5-woocommerce-mcp.php",
     "test": "phpunit --configuration phpunit.xml.dist",
+    "validate-oauth-dependency": "php tests/validate-oauth-dependency.php",
     "validate-version": "php tests/validate-version.php",
     "check": [
       "@validate-version",
+      "@validate-oauth-dependency",
       "@lint:syntax",
       "@lint",
       "@test"

@@ -3,7 +3,7 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 0.1.3
+Stable tag: 0.1.4
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -14,7 +14,11 @@ Secure MCP foundations for WordPress, Divi 5, WooCommerce, browser-based preview
 
 MCP Bridge for Divi 5 and WooCommerce is an early-stage plugin that builds on the WordPress Abilities API and the official WordPress MCP Adapter.
 
-Version 0.1.3 adds plugin-scoped MCP update operations for the current development cycle. An authenticated MCP client can force a fresh stable GitHub release check, read the current and available plugin versions, and update only this plugin when the caller has the WordPress `update_plugins` capability and supplies an `expected_version` that exactly matches the release discovered by the updater.
+Version 0.1.4 adds an OAuth 2.1 authentication path for remote MCP clients such as ChatGPT while retaining the existing WordPress-authenticated MCP endpoint. OAuth clients connect to `/wp-json/mcp/mcp-oauth-server`, discover the authorization server from the site's OAuth metadata, authorize through the normal WordPress login flow, and use Authorization Code with PKCE S256. The OAuth layer issues bearer access tokens and rotating refresh tokens and supports revocation.
+
+The OAuth endpoint is enabled only when the canonical WordPress Site Address uses HTTPS. WordPress Application Passwords are used only as internal, revocable session anchors by the OAuth implementation: their raw values are discarded immediately and are not entered into the MCP client, placed in URLs, or exposed by this plugin.
+
+Version 0.1.3 added plugin-scoped MCP update operations for the current development cycle. An authenticated MCP client can force a fresh stable GitHub release check, read the current and available plugin versions, and update only this plugin when the caller has the WordPress `update_plugins` capability and supplies an `expected_version` that exactly matches the release discovered by the updater.
 
 Usage telemetry and error reporting are separate administrator settings and are enabled by default in this temporary pre-WordPress.org GitHub distribution phase. Either setting can be disabled under Settings > MCP Bridge.
 
@@ -35,14 +39,23 @@ Before first WordPress.org submission, replace the Contributors placeholder with
 1. Install a production ZIP built from a tagged release.
 2. Activate the plugin.
 3. Confirm that WordPress 6.9 or newer is running.
-4. Divi 5 and WooCommerce are detected if installed; they are not bundled.
-5. GitHub release checks are enabled by default. They can be disabled under Settings > MCP Bridge.
-6. Usage telemetry is enabled by default in current GitHub-distributed builds and can be disabled independently.
-7. Automatic fatal-error reporting is enabled by default in current GitHub-distributed builds and can be disabled independently.
+4. Confirm that the WordPress Site Address uses HTTPS before configuring an OAuth MCP client.
+5. Divi 5 and WooCommerce are detected if installed; they are not bundled.
+6. GitHub release checks are enabled by default. They can be disabled under Settings > MCP Bridge.
+7. Usage telemetry is enabled by default in current GitHub-distributed builds and can be disabled independently.
+8. Automatic fatal-error reporting is enabled by default in current GitHub-distributed builds and can be disabled independently.
 
 The GitHub source checkout requires Composer and is not itself the production package.
 
 == Frequently Asked Questions ==
+
+= Which endpoint should I use with an OAuth client such as ChatGPT? =
+
+Use `/wp-json/mcp/mcp-oauth-server` on your HTTPS WordPress site and select OAuth authentication in the client. The client discovers the authorization and token endpoints through the site's OAuth metadata, then opens the normal browser-based WordPress authorization flow. Do not put a WordPress username, Application Password, bearer token, or other credential into the MCP server URL.
+
+= Does OAuth replace the existing WordPress-authenticated MCP endpoint? =
+
+No. OAuth is additive. The existing WordPress-authenticated MCP server remains available for clients that already support WordPress authentication, while OAuth-capable remote clients can use the dedicated OAuth endpoint.
 
 = Does this plugin include Divi 5 or WooCommerce? =
 
@@ -64,7 +77,7 @@ Yes, for this plugin only. `divi5-woocommerce-mcp/get-update-status` forces a fr
 
 Yes. Go to Settings > MCP Bridge and disable GitHub updates. The option is enabled by default. When disabled, MCP self-update is also unavailable.
 
-= What telemetry is sent in version 0.1.3? =
+= What telemetry is sent in version 0.1.4? =
 
 A low-frequency heartbeat sends a random installation identifier, plugin version, WordPress version, PHP major/minor version, and Divi/WooCommerce detection booleans. The first heartbeat is delayed and later heartbeats are scheduled approximately weekly with jitter.
 
@@ -78,7 +91,7 @@ Yes. Usage telemetry and automatic error reporting are separate Settings > MCP B
 
 = Is the plugin production ready? =
 
-No. Version 0.1.3 is still an early development release focused on MCP foundations, update tooling, and infrastructure for future implementation.
+No. Version 0.1.4 is still an early development release focused on MCP foundations, OAuth interoperability, update tooling, and infrastructure for future implementation.
 
 = Why is the license GPL-2.0-or-later? =
 
@@ -89,6 +102,14 @@ WordPress.org requires GPL-compatible licensing. A non-commercial restriction is
 Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
+
+= 0.1.4 =
+* Add an OAuth 2.1 MCP endpoint at `/wp-json/mcp/mcp-oauth-server` while preserving the existing WordPress-authenticated endpoint.
+* Add Authorization Code with PKCE S256, Client ID Metadata Document support, bearer access tokens, rotating refresh tokens, and revocation through the embedded OAuth layer.
+* Advertise `offline_access` in OAuth authorization-server discovery for clients that use refresh-token connectivity.
+* Disable OAuth when the canonical WordPress Site Address is not HTTPS.
+* Keep WordPress Application Password values internal to the OAuth session implementation and out of MCP URLs and client configuration.
+* Add CI validation for the reviewed OAuth dependency revision and unit coverage for HTTPS/discovery behavior.
 
 = 0.1.3 =
 * Add `divi5-woocommerce-mcp/get-update-status` to force a fresh stable GitHub release check and report current/available versions.
