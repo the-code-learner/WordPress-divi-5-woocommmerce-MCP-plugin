@@ -59,6 +59,12 @@ final class Discovery {
 	/**
 	 * Build RFC 8414 metadata for the embedded OAuth 2.1 authorization server.
 	 *
+	 * The pinned upstream token endpoint is a PKCE public-client endpoint. ChatGPT
+	 * supports `none` through CIMD whenever that method is in the intersection of
+	 * client and server metadata, so advertise the method the endpoint actually
+	 * implements rather than routing token exchange through a custom assertion
+	 * layer.
+	 *
 	 * @return array<string, mixed>
 	 */
 	public static function authorization_server_metadata( string $base_url, ?string $resource_url = null ): array {
@@ -74,8 +80,7 @@ final class Discovery {
 			'grant_types_supported'                 => array( 'authorization_code', 'refresh_token' ),
 			'code_challenge_methods_supported'      => array( 'S256' ),
 			'scopes_supported'                      => array( 'mcp', 'offline_access' ),
-			'token_endpoint_auth_methods_supported' => array( 'none', 'private_key_jwt' ),
-			'token_endpoint_auth_signing_alg_values_supported' => array( 'RS256' ),
+			'token_endpoint_auth_methods_supported' => array( 'none' ),
 			'client_id_metadata_document_supported' => true,
 			'authorization_response_iss_parameter_supported' => true,
 			'protected_resources'                   => array( $resource_url ),
