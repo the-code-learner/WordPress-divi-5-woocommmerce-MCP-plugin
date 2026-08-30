@@ -14,6 +14,22 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Browser-based preview and DOM/CSS inspection.
 - Revision-aware publish gate and persistent audit logging.
 
+## [0.2.2] - 2026-08-30
+
+### Fixed
+
+- Preserve the plugin's original site or multisite network activation state across MCP self-update attempts.
+- Use WordPress's bulk plugin update path so a non-browser request does not deliberately leave the plugin inactive.
+- Treat an unverified activation restoration as an update failure instead of returning a false success.
+
+### Changed
+
+- Bumped the plugin version to `0.2.2`.
+
+### Tests
+
+- Added regression coverage for site activation, network activation, inactive plugins, activation errors, and false-success prevention.
+
 ## [0.1.8] - 2026-08-30
 
 ### Fixed

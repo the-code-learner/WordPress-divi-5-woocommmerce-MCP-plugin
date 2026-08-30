@@ -3,7 +3,7 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 0.2.1
+Stable tag: 0.2.2
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -13,6 +13,8 @@ Secure MCP access for WordPress with native Divi 5 authoring, OAuth, controlled 
 == Description ==
 
 MCP Bridge for Divi 5 and WooCommerce builds on the WordPress Abilities API and the official WordPress MCP Adapter.
+
+Version 0.2.2 preserves the plugin's site or network activation state during MCP self-updates. The updater now follows WordPress's bulk update path, restores the original activation scope if an update attempt changes it, and reports a failure instead of returning success when reactivation cannot be verified.
 
 Version 0.2.1 fixes native authoring on Divi runtimes where the official converter is available but returns the backward-compatible `divi/shortcode-module` wrapper because core conversion outlines are not loaded in the MCP request. The writer still uses `Conversion::maybeConvertContent()` first, rejects shortcode fallbacks, and then uses a constrained native block serializer for the verified Section, Row, Column, Text, Button, Image, Code, and Divider schema.
 
@@ -87,13 +89,19 @@ Yes. `divi5-woocommerce-mcp/update-self` can update only this plugin, requires t
 
 = Is this plugin production ready? =
 
-No. Version 0.2.1 is an early development release. Native Divi editing is intentionally conservative and draft-first while the supported semantic module surface expands.
+No. Version 0.2.2 is an early development release. Native Divi editing is intentionally conservative and draft-first while the supported semantic module surface expands.
 
 == Screenshots ==
 
 Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
+
+= 0.2.2 =
+* Preserve site and multisite network activation across MCP self-update attempts.
+* Use WordPress's bulk plugin update path so an active plugin is not deliberately deactivated during a non-browser MCP request.
+* Reject false update success when the original activation state cannot be restored and verified.
+* Add regression coverage for site activation, network activation, inactive plugins, activation errors, and false-success prevention.
 
 = 0.2.1 =
 * Reject `divi/shortcode-module` as a successful native conversion or editable native module.
