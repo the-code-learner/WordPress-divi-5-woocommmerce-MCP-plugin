@@ -141,8 +141,8 @@ final class RuntimeParameterNormalizer {
 		$value_by_device = null !== $match && isset( $match['value_by_device'] ) && is_array( $match['value_by_device'] )
 			? $match['value_by_device']
 			: array();
-		$devices        = array_values( array_keys( $value_by_device ) );
-		$default        = array_key_exists( 'desktop', $value_by_device )
+		$devices         = array_values( array_keys( $value_by_device ) );
+		$default         = array_key_exists( 'desktop', $value_by_device )
 			? $value_by_device['desktop']
 			: ( array() !== $value_by_device ? reset( $value_by_device ) : null );
 
@@ -276,7 +276,7 @@ final class RuntimeParameterNormalizer {
 
 		if ( ! isset( $index[ $canonical ] ) ) {
 			$index[ $canonical ] = array(
-				'canonical_path' => $canonical,
+				'canonical_path'  => $canonical,
 				'value_by_device' => array(),
 				'value_paths'     => array(),
 				'raw_default'     => null,
@@ -308,7 +308,7 @@ final class RuntimeParameterNormalizer {
 		foreach ( $index as $path => $record ) {
 			$parts = explode( '.', $path );
 
-			if ( $leaf === (string) end( $parts ) && ( '' === $root || $root === $parts[0] ) ) {
+			if ( (string) end( $parts ) === $leaf && ( '' === $root || $parts[0] === $root ) ) {
 				$matches[] = $record;
 			}
 		}
@@ -321,14 +321,14 @@ final class RuntimeParameterNormalizer {
 	}
 
 	/**
-	 * @param array<string, mixed> $match Match.
+	 * @param array<string, mixed> $matched_default Matched default record.
 	 * @return array<string, mixed>
 	 */
-	private static function decorate_match( array $match, string $provenance, string $confidence ): array {
-		$match['provenance'] = $provenance;
-		$match['confidence'] = $confidence;
+	private static function decorate_match( array $matched_default, string $provenance, string $confidence ): array {
+		$matched_default['provenance'] = $provenance;
+		$matched_default['confidence'] = $confidence;
 
-		return $match;
+		return $matched_default;
 	}
 
 	/**

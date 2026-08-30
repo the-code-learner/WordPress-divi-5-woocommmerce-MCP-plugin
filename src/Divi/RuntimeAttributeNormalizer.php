@@ -15,7 +15,7 @@ final class RuntimeAttributeNormalizer {
 	/**
 	 * Normalize current native attributes against runtime parameters.
 	 *
-	 * @param array<string, mixed>              $attributes Native node attributes.
+	 * @param array<string, mixed>             $attributes Native node attributes.
 	 * @param array<int, array<string, mixed>> $parameters Runtime parameters.
 	 * @return array<string, array<string, mixed>>
 	 */
@@ -37,7 +37,7 @@ final class RuntimeAttributeNormalizer {
 			$value_by_device = isset( $match['value_by_device'] ) && is_array( $match['value_by_device'] )
 				? $match['value_by_device']
 				: array();
-			$value = array_key_exists( 'desktop', $value_by_device )
+			$value           = array_key_exists( 'desktop', $value_by_device )
 				? $value_by_device['desktop']
 				: ( array() !== $value_by_device ? reset( $value_by_device ) : null );
 
@@ -72,7 +72,7 @@ final class RuntimeAttributeNormalizer {
 			return $parameter;
 		}
 
-		$evidence = $normalized[ $semantic ];
+		$evidence                       = $normalized[ $semantic ];
 		$parameter['native_path']        = $evidence['native_path'];
 		$parameter['native_value_paths'] = $evidence['native_value_paths'];
 		$parameter['native_provenance']  = $evidence['native_provenance'];
@@ -187,7 +187,7 @@ final class RuntimeAttributeNormalizer {
 		$semantic = isset( $parameter['semantic_path'] ) && is_string( $parameter['semantic_path'] )
 			? $parameter['semantic_path']
 			: '';
-		$native = isset( $parameter['native_path'] ) && is_string( $parameter['native_path'] )
+		$native   = isset( $parameter['native_path'] ) && is_string( $parameter['native_path'] )
 			? $parameter['native_path']
 			: '';
 
@@ -210,7 +210,7 @@ final class RuntimeAttributeNormalizer {
 		foreach ( $index as $path => $record ) {
 			$parts = explode( '.', $path );
 
-			if ( $leaf === (string) end( $parts ) && ( '' === $root || $root === $parts[0] ) ) {
+			if ( (string) end( $parts ) === $leaf && ( '' === $root || $parts[0] === $root ) ) {
 				$matches[] = $record;
 			}
 		}
