@@ -32,7 +32,7 @@ jobs:
             echo "===== ${label} ====="
             echo "URL: ${url}"
             echo "HTTP: ${status}"
-            grep -iE '^(content-type|cache-control|pragma|expires|age|server|x-litespeed-cache|cf-cache-status):' "$headers" || true
+            grep -iE '^(content-type|cache-control|pragma|expires|age|location|server|x-litespeed-cache|cf-cache-status):' "$headers" || true
             echo "BODY:"
             if jq -e . "$body" >/dev/null 2>&1; then
               jq -c . "$body"
@@ -46,6 +46,20 @@ jobs:
           probe_get protected_resource_root "${BASE_URL}/.well-known/oauth-protected-resource"
           probe_get protected_resource_path "${BASE_URL}/.well-known/oauth-protected-resource/wp-json/mcp/mcp-oauth-server"
 
+          follow_headers=/tmp/protected_resource_root_follow.headers
+          follow_body=/tmp/protected_resource_root_follow.body
+          follow_result="$(curl --connect-timeout 15 --max-time 30 -sS -L -D "$follow_headers" -o "$follow_body" -w 'HTTP=%{http_code} URL=%{url_effective} REDIRECTS=%{num_redirects}' "${BASE_URL}/.well-known/oauth-protected-resource")"
+          echo '===== protected_resource_root_follow ====='
+          echo "$follow_result"
+          grep -iE '^(HTTP/|content-type|cache-control|pragma|expires|age|location|server|x-litespeed-cache|cf-cache-status):' "$follow_headers" || true
+          echo 'BODY:'
+          if jq -e . "$follow_body" >/dev/null 2>&1; then
+            jq -c . "$follow_body"
+          else
+            head -c 2000 "$follow_body"; echo
+          fi
+          echo
+
           headers=/tmp/mcp_initialize.headers
           body=/tmp/mcp_initialize.body
           status="$(curl --connect-timeout 15 --max-time 30 -sS -D "$headers" -o "$body" -w '%{http_code}' \
@@ -57,7 +71,7 @@ jobs:
           echo '===== unauthenticated_mcp_initialize ====='
           echo "URL: ${MCP_URL}"
           echo "HTTP: ${status}"
-          grep -iE '^(content-type|cache-control|pragma|expires|www-authenticate|server|x-litespeed-cache|cf-cache-status):' "$headers" || true
+          grep -iE '^(content-type|cache-control|pragma|expires|www-authenticate|location|server|x-litespeed-cache|cf-cache-status):' "$headers" || true
           echo 'BODY:'
           if jq -e . "$body" >/dev/null 2>&1; then
             jq -c . "$body"
