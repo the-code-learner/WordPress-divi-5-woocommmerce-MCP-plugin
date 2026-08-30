@@ -14,6 +14,21 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Browser-based preview and DOM/CSS inspection.
 - Revision-aware publish gate and persistent audit logging.
 
+## [0.3.2] - 2026-08-30
+
+### Fixed
+
+- Register the Divi module catalog without an input schema so the WordPress Abilities API treats it as a native parameterless ability.
+- Use zero-argument execution and permission callbacks, matching the plugin's established status ability contract.
+
+### Changed
+
+- Bumped the plugin version to `0.3.2`.
+
+### Tests
+
+- Assert that the catalog registration omits `input_schema` and executes without arguments.
+
 ## [0.3.1] - 2026-08-30
 
 ### Fixed

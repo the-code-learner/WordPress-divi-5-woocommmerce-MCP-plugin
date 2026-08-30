@@ -121,11 +121,6 @@ final class Abilities {
 				'category'            => self::CATEGORY,
 				'execute_callback'    => array( self::class, 'list_modules' ),
 				'permission_callback' => array( self::class, 'can_read_modules' ),
-				'input_schema'        => array(
-					'type'                 => 'object',
-					'additionalProperties' => false,
-					'properties'           => array(),
-				),
 				'output_schema'       => self::module_registry_output_schema(),
 				'meta'                => self::mcp_meta( true, false, true ),
 			)
@@ -240,12 +235,9 @@ final class Abilities {
 	}
 
 	/**
-	 * @param array<string, mixed>|null $input Ability input.
 	 * @return array<string, mixed>
 	 */
-	public static function list_modules( ?array $input = null ): array {
-		unset( $input );
-
+	public static function list_modules(): array {
 		return ModuleRegistry::catalog();
 	}
 
@@ -323,11 +315,9 @@ final class Abilities {
 	}
 
 	/**
-	 * @param array<string, mixed>|null $input Ability input.
+	 * Check whether the current user may inspect installed Divi modules.
 	 */
-	public static function can_read_modules( ?array $input = null ): bool {
-		unset( $input );
-
+	public static function can_read_modules(): bool {
 		return current_user_can( 'edit_posts' );
 	}
 
