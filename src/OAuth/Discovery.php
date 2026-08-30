@@ -12,7 +12,7 @@ namespace CodeLearner\Divi5WooCommerceMCP\OAuth;
 use CodeLearner\Divi5WooCommerceMCP\Version;
 
 final class Discovery {
-	private const MCP_REST_PATH       = '/wp-json/mcp/mcp-oauth-server';
+	private const MCP_REST_PATH        = '/wp-json/mcp/mcp-oauth-server';
 	private const CACHE_VERSION_OPTION = 'divi5_wc_mcp_oauth_metadata_cache_version';
 
 	/**
