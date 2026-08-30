@@ -13,7 +13,7 @@
     "php": ">=7.4",
     "automattic/jetpack-autoloader": "^5.0",
     "wordpress/mcp-adapter": "0.6.1 as 0.5.99",
-    "wp-media/mcp-oauth": "dev-develop#d6b1aa1a3b09212719b2a2e3e0979ec5e7010b93",
+    "wp-media/mcp-oauth": "dev-develop",
     "yahnis-elsts/plugin-update-checker": "^5.7"
   },
   "require-dev": {
