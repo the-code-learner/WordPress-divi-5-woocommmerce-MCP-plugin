@@ -60,22 +60,83 @@ final class RuntimeModuleRegistryTest extends TestCase {
 			),
 		);
 		$descriptor = RuntimeModuleRegistry::describe_from_types( 'acme/super-card', $registered );
-		$parameters = array();
-
-		foreach ( $descriptor['parameters'] as $parameter ) {
-			$parameters[ $parameter['semantic_path'] ] = $parameter;
-		}
+		$parameters = $this->parameter_map( $descriptor['parameter_graph'] );
+		$authoring  = $this->parameter_map( $descriptor['parameters'] );
 
 		self::assertArrayHasKey( 'content.innerContent', $parameters );
-		self::assertSame( 'divi_runtime_settings', $parameters['content.innerContent']['native_provenance'] );
+		self::assertSame( 'runtime_attr_name', $parameters['content.innerContent']['native_provenance'] );
+		self::assertSame( 'high', $parameters['content.innerContent']['native_confidence'] );
+		self::assertSame( 'content.innerContent', $parameters['content.innerContent']['native_path'] );
+		self::assertSame( 'content.innerContent.desktop.value', $parameters['content.innerContent']['native_value_paths']['desktop'] );
 		self::assertSame( 'text', $parameters['content.innerContent']['type'] );
-		self::assertSame( 'supported', $parameters['content.innerContent']['responsive'] );
-		self::assertContains( 'desktop', $parameters['content.innerContent']['breakpoints'] );
+		self::assertSame( 'Fixture copy', $parameters['content.innerContent']['default'] );
+		self::assertSame( 'Fixture copy', $parameters['content.innerContent']['default_by_device']['desktop'] );
+		self::assertSame( 'unknown', $parameters['content.innerContent']['responsive'] );
 		self::assertSame( 'unavailable', $parameters['content.innerContent']['sticky'] );
 		self::assertSame( 'supported', $parameters['content.innerContent']['preset_support'] );
+		self::assertSame( 'supported', $parameters['content.innerContent']['write_mapping'] );
+		self::assertArrayHasKey( 'content.innerContent', $authoring );
+		self::assertSame( 'Fixture copy', $authoring['content.innerContent']['default']['desktop']['value'] );
 		self::assertSame( array( 'acme/super-card-item' ), $descriptor['allowed_children'] );
 		self::assertArrayHasKey( 'raw_runtime', $descriptor );
 		self::assertArrayHasKey( 'attributes', $descriptor['raw_runtime'] );
+	}
+
+	public function test_live_image_controls_keep_semantic_and_native_paths_separate(): void {
+		$registered = array(
+			'divi/image' => $this->block_type( 'Image', 'module', $this->image_attributes() ),
+		);
+		$descriptor = RuntimeModuleRegistry::describe_from_types( 'divi/image', $registered );
+		$parameters = $this->parameter_map( $descriptor['parameter_graph'] );
+		$authoring  = $this->parameter_map( $descriptor['parameters'] );
+
+		$src = $parameters['image.innerContent.src'];
+		self::assertNull( $src['native_path'] );
+		self::assertSame( 'unknown', $src['native_provenance'] );
+		self::assertSame( 'unavailable', $src['write_mapping'] );
+		self::assertSame( 'supported', $src['responsive'] );
+		self::assertSame( 'supported', $src['hover'] );
+		self::assertSame( 'unavailable', $src['sticky'] );
+		self::assertSame( 'supported', $src['preset_support'] );
+		self::assertArrayNotHasKey( 'image.innerContent.src', $authoring );
+
+		$link_target = $parameters['image.innerContent.linkTarget'];
+		self::assertSame( 'image.innerContent.linkTarget', $link_target['native_path'] );
+		self::assertSame( 'default_leaf_exact_match', $link_target['native_provenance'] );
+		self::assertSame( 'medium', $link_target['native_confidence'] );
+		self::assertSame( 'image.innerContent.desktop.value.linkTarget', $link_target['native_value_paths']['desktop'] );
+		self::assertSame( array( 'off', 'on' ), $link_target['enum'] );
+		self::assertSame( 'off', $link_target['default'] );
+		self::assertSame( 'unavailable', $link_target['responsive'] );
+		self::assertSame( 'unavailable', $link_target['hover'] );
+		self::assertSame( 'unavailable', $link_target['sticky'] );
+		self::assertArrayNotHasKey( 'image.innerContent.linkTarget', $authoring );
+
+		$fullwidth = $parameters['module.advanced.sizing.forceFullwidth'];
+		self::assertSame( 'module.advanced.sizing.forceFullwidth', $fullwidth['runtime_hint'] );
+		self::assertSame( 'module.advanced.forceFullwidth', $fullwidth['native_path'] );
+		self::assertSame( 'default_leaf_unique_match', $fullwidth['native_provenance'] );
+		self::assertSame( 'medium', $fullwidth['native_confidence'] );
+		self::assertSame( 'module.advanced.forceFullwidth.desktop.value', $fullwidth['native_value_paths']['desktop'] );
+		self::assertSame( 'off', $fullwidth['default'] );
+		self::assertArrayHasKey( 'module.advanced.sizing.forceFullwidth', $authoring );
+		self::assertSame( 'off', $authoring['module.advanced.sizing.forceFullwidth']['default']['desktop']['value'] );
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $parameters Parameters.
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function parameter_map( array $parameters ): array {
+		$map = array();
+
+		foreach ( $parameters as $parameter ) {
+			if ( isset( $parameter['semantic_path'] ) && is_string( $parameter['semantic_path'] ) ) {
+				$map[ $parameter['semantic_path'] ] = $parameter;
+			}
+		}
+
+		return $map;
 	}
 
 	/**
@@ -83,8 +144,8 @@ final class RuntimeModuleRegistryTest extends TestCase {
 	 */
 	private function divi_attributes(): array {
 		return array(
-			'module'   => array( 'type' => 'object' ),
-			'content'  => array(
+			'module'    => array( 'type' => 'object' ),
+			'content'   => array(
 				'type'     => 'object',
 				'default'  => array(
 					'innerContent' => array(
@@ -94,8 +155,8 @@ final class RuntimeModuleRegistryTest extends TestCase {
 				'settings' => array(
 					'innerContent' => array(
 						'item' => array(
-							'attrName'  => 'content.innerContent',
-							'features'  => array(
+							'attrName' => 'content.innerContent',
+							'features' => array(
 								'dynamicContent' => array( 'type' => 'text' ),
 								'sticky'         => false,
 								'preset'         => 'content',
@@ -108,10 +169,108 @@ final class RuntimeModuleRegistryTest extends TestCase {
 					),
 				),
 			),
-			'lock'     => array( 'type' => 'object' ),
-			'metadata' => array( 'type' => 'object' ),
+			'lock'      => array( 'type' => 'object' ),
+			'metadata'  => array( 'type' => 'object' ),
 			'className' => array( 'type' => 'string' ),
-			'style'    => array( 'type' => 'object' ),
+			'style'     => array( 'type' => 'object' ),
+		);
+	}
+
+	/**
+	 * Reduced read-only live Divi 5 Image schema evidence.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function image_attributes(): array {
+		return array(
+			'module'    => array(
+				'type'     => 'object',
+				'default'  => array(
+					'advanced' => array(
+						'forceFullwidth' => array(
+							'desktop' => array( 'value' => 'off' ),
+						),
+					),
+				),
+				'settings' => array(
+					'advanced' => array(
+						'sizing' => array(
+							'groupType' => 'group-items',
+							'items'     => array(
+								'forceFullwidth' => array(
+									'groupSlug' => 'designSizing',
+									'attrName'  => 'module.advanced.sizing',
+									'subName'   => 'forceFullwidth',
+									'features'  => array(
+										'hover'  => false,
+										'sticky' => false,
+									),
+									'component' => array(
+										'type' => 'field',
+										'name' => 'divi/toggle',
+									),
+								),
+							),
+						),
+					),
+				),
+			),
+			'image'     => array(
+				'type'     => 'object',
+				'default'  => array(
+					'innerContent' => array(
+						'desktop' => array(
+							'value' => array( 'linkTarget' => 'off' ),
+						),
+					),
+				),
+				'settings' => array(
+					'innerContent' => array(
+						'groupType' => 'group-items',
+						'items'     => array(
+							'src'        => array(
+								'groupSlug' => 'contentImage',
+								'subName'   => 'src',
+								'features'  => array(
+									'dynamicContent' => array( 'type' => 'image' ),
+									'sticky'         => false,
+									'responsive'     => true,
+									'hover'          => true,
+									'preset'         => 'content',
+								),
+								'component' => array(
+									'type' => 'field',
+									'name' => 'divi/upload',
+								),
+							),
+							'linkTarget' => array(
+								'groupSlug' => 'contentImageLink',
+								'subName'   => 'linkTarget',
+								'features'  => array(
+									'responsive' => false,
+									'hover'      => false,
+									'sticky'     => false,
+									'preset'     => 'content',
+								),
+								'component' => array(
+									'type'  => 'field',
+									'name'  => 'divi/select',
+									'props' => array(
+										'options' => array(
+											'off' => array( 'label' => 'In The Current Tab' ),
+											'on'  => array( 'label' => 'In A New Tab' ),
+										),
+									),
+								),
+							),
+						),
+					),
+				),
+			),
+			'lock'      => array( 'type' => 'object' ),
+			'metadata'  => array( 'type' => 'object' ),
+			'className' => array( 'type' => 'string' ),
+			'style'     => array( 'type' => 'object' ),
 		);
 	}
 
