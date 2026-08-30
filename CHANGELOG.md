@@ -9,10 +9,43 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 ### Planned
 
 - WordPress CRUD Abilities.
-- Divi 5 semantic read/write capabilities.
 - Optional WooCommerce capabilities.
 - Browser-based preview and DOM/CSS inspection.
+- Runtime-proven state/preset write mappings.
 - Revision-aware publish gate and persistent audit logging.
+
+## [1.0.0] - 2026-08-31
+
+### Added
+
+- Clean-break Divi runtime/document API with `divi-runtime-describe`, `divi-module-describe`, `divi-document-get`, `divi-document-validate`, and `divi-document-mutate`.
+- Normalized Divi document AST with deterministic snapshot-scoped handles, numeric paths retained only as locators, and SHA-256 document tokens for optimistic concurrency.
+- Runtime-driven discovery of core and compatible third-party Divi modules without static vendor catalogs.
+- Full module parameter introspection plus a narrower mutation-facing parameter set generated only from runtime-proven persisted value mappings.
+- Normalization of Divi `desktop`/`tablet`/`phone` value envelopes and runtime capability reporting with explicit `supported`, `unknown`, and `unavailable` states.
+- Atomic semantic mutation planning for insert, set, delete, move, duplicate, and runtime-proven responsive operations.
+- Machine-readable validation errors identifying the operation, node, property, offending value, and expected contract.
+
+### Security
+
+- Semantic/UI paths remain distinct from persisted native paths; native storage paths are never synthesized mechanically from group lineage and `subName`.
+- A parameter is exposed for mutation only when both its persisted path and a validator-compatible value contract are demonstrated by runtime evidence.
+- Unknown or opaque value contracts remain introspection-only even when a possible persisted path is observable.
+- Mutation rejects stale document tokens, validates the complete batch before persistence, and performs one post-content write only after all operations pass.
+- Normal writes remain restricted to editable `draft`, `pending`, and `auto-draft` posts; publishing remains a separate capability.
+- Raw-native mutation, unproven state/preset writes, render, and DOM/computed-style inspection remain unavailable rather than falling back to guessed behavior.
+
+### Changed
+
+- Bumped the plugin version from `0.4.0` to `1.0.0` for the clean-break next-major architecture milestone.
+- Retained the v0.4.0 Divi abilities as compatibility shims while making the runtime/document model the primary API direction.
+- Updated document authoring metadata and public documentation to reflect implemented validate/mutate support without overclaiming unfinished render/inspect/state/preset capabilities.
+
+### Tests
+
+- Added regression coverage for runtime module discovery, third-party namespace handling, snapshot handle stability, normalized document properties, atomic batch semantics, responsive writes, unsupported state/preset mappings, and clean-break ability registration.
+- Added live-schema-derived regression fixtures for Text, Button, Section, Column, and Image, including the `forceFullwidth` case where the UI/group path and persisted storage path differ.
+- Added a value-contract gate regression proving that a runtime-proven path with an opaque vendor type remains non-authorable.
 
 ## [0.4.0] - 2026-08-30
 
@@ -91,7 +124,7 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 ### Fixed
 
 - Preserve the plugin's original site or multisite network activation state across MCP self-update attempts.
-- Use WordPress's bulk plugin update path so a non-browser request does not deliberately leave the plugin inactive.
+- Use WordPress's bulk update path so a non-browser request does not deliberately leave the plugin inactive.
 - Treat an unverified activation restoration as an update failure instead of returning a false success.
 
 ### Changed
