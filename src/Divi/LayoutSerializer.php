@@ -67,21 +67,21 @@ final class LayoutSerializer {
 
 	/**
 	 * @param array<string, mixed> $node Node definition.
-	 * @param string|null          $parent Parent semantic type.
+	 * @param string|null          $parent_type Parent semantic type.
 	 */
-	private static function serialize_node( array $node, ?string $parent ): string {
+	private static function serialize_node( array $node, ?string $parent_type ): string {
 		$type = $node['type'] ?? null;
 
 		if ( ! is_string( $type ) || ! isset( self::MODULES[ $type ] ) ) {
 			throw new InvalidArgumentException( 'Unsupported Divi layout node type.' );
 		}
 
-		self::assert_parent_child_relationship( $parent, $type );
+		self::assert_parent_child_relationship( $parent_type, $type );
 
 		$attributes = $node['attributes'] ?? array();
 
 		if ( ! is_array( $attributes ) ) {
-			throw new InvalidArgumentException( sprintf( 'Attributes for %s must be an object.', $type ) );
+			throw new InvalidArgumentException( 'Divi node attributes must be an object.' );
 		}
 
 		if ( isset( $node['label'] ) && is_string( $node['label'] ) && '' !== trim( $node['label'] ) && ! isset( $attributes['admin_label'] ) ) {
@@ -91,7 +91,7 @@ final class LayoutSerializer {
 		$content = $node['content'] ?? '';
 
 		if ( ! is_string( $content ) ) {
-			throw new InvalidArgumentException( sprintf( 'Content for %s must be a string.', $type ) );
+			throw new InvalidArgumentException( 'Divi node content must be a string.' );
 		}
 
 		if ( 'button' === $type && '' !== $content && ! isset( $attributes['button_text'] ) ) {
@@ -106,11 +106,11 @@ final class LayoutSerializer {
 		$children = $node['children'] ?? array();
 
 		if ( ! is_array( $children ) ) {
-			throw new InvalidArgumentException( sprintf( 'Children for %s must be an array.', $type ) );
+			throw new InvalidArgumentException( 'Divi node children must be an array.' );
 		}
 
 		if ( ! isset( self::CONTAINERS[ $type ] ) && array() !== $children ) {
-			throw new InvalidArgumentException( sprintf( 'The %s module cannot contain child nodes.', $type ) );
+			throw new InvalidArgumentException( 'Leaf Divi modules cannot contain child nodes.' );
 		}
 
 		$children_markup = '';
@@ -129,8 +129,8 @@ final class LayoutSerializer {
 		return $opening . $content . $children_markup . '[/' . $shortcode . ']';
 	}
 
-	private static function assert_parent_child_relationship( ?string $parent, string $type ): void {
-		if ( null === $parent ) {
+	private static function assert_parent_child_relationship( ?string $parent_type, string $type ): void {
+		if ( null === $parent_type ) {
 			if ( 'section' !== $type ) {
 				throw new InvalidArgumentException( 'Only sections can be top-level nodes.' );
 			}
@@ -138,10 +138,10 @@ final class LayoutSerializer {
 			return;
 		}
 
-		$allowed = self::CONTAINERS[ $parent ] ?? array();
+		$allowed = self::CONTAINERS[ $parent_type ] ?? array();
 
 		if ( ! in_array( $type, $allowed, true ) ) {
-			throw new InvalidArgumentException( sprintf( 'A %s node cannot contain a %s node.', $parent, $type ) );
+			throw new InvalidArgumentException( 'Invalid Divi layout parent/child relationship.' );
 		}
 	}
 
@@ -166,7 +166,7 @@ final class LayoutSerializer {
 			}
 
 			if ( ! is_scalar( $value ) ) {
-				throw new InvalidArgumentException( sprintf( 'Divi attribute %s must be a scalar value.', $key ) );
+				throw new InvalidArgumentException( 'Divi shortcode attribute values must be scalar.' );
 			}
 
 			$serialized .= sprintf(
