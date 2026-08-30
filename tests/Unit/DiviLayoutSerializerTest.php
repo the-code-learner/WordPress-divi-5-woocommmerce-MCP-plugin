@@ -22,34 +22,35 @@ final class DiviLayoutSerializerTest extends TestCase {
 	}
 
 	public function test_semantic_layout_becomes_valid_divi_shortcode_hierarchy(): void {
-		$markup = LayoutSerializer::to_shortcode(
+		$layout = array(
 			array(
-				array(
-					'type'     => 'section',
-					'label'    => 'Hero',
-					'children' => array(
-						array(
-							'type'     => 'row',
-							'children' => array(
-								array(
-									'type'     => 'column',
-									'children' => array(
-										array(
-											'type'    => 'text',
-											'content' => '<h1>Velocity</h1>',
-										),
-										array(
-											'type'       => 'button',
-											'content'    => 'Start',
-											'attributes' => array( 'button_url' => '#start' ),
-										),
+				'type'     => 'section',
+				'label'    => 'Hero',
+				'children' => array(
+					array(
+						'type'     => 'row',
+						'children' => array(
+							array(
+								'type'     => 'column',
+								'children' => array(
+									array(
+										'type'    => 'text',
+										'content' => '<h1>Velocity</h1>',
+									),
+									array(
+										'type'       => 'button',
+										'content'    => 'Start',
+										'attributes' => array( 'button_url' => '#start' ),
 									),
 								),
 							),
+						),
 					),
 				),
-			)
+			),
 		);
+
+		$markup = LayoutSerializer::to_shortcode( $layout );
 
 		self::assertStringContainsString( '[et_pb_section admin_label="Hero"]', $markup );
 		self::assertStringContainsString( '[et_pb_row]', $markup );
@@ -74,28 +75,29 @@ final class DiviLayoutSerializerTest extends TestCase {
 	}
 
 	public function test_attribute_values_are_escaped(): void {
-		$markup = LayoutSerializer::to_shortcode(
+		$layout = array(
 			array(
-				array(
-					'type'     => 'section',
-					'children' => array(
-						array(
-							'type'     => 'row',
-							'children' => array(
-								array(
-									'type'     => 'column',
-									'children' => array(
-										array(
-											'type'       => 'text',
-											'attributes' => array( 'admin_label' => 'A "quoted" label' ),
-										),
+				'type'     => 'section',
+				'children' => array(
+					array(
+						'type'     => 'row',
+						'children' => array(
+							array(
+								'type'     => 'column',
+								'children' => array(
+									array(
+										'type'       => 'text',
+										'attributes' => array( 'admin_label' => 'A "quoted" label' ),
 									),
 								),
 							),
+						),
 					),
 				),
-			)
+			),
 		);
+
+		$markup = LayoutSerializer::to_shortcode( $layout );
 
 		self::assertStringContainsString( 'admin_label="A &quot;quoted&quot; label"', $markup );
 	}
