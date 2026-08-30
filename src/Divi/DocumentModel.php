@@ -28,21 +28,22 @@ final class DocumentModel {
 		$catalog        = RuntimeModuleRegistry::catalog();
 		$descriptors    = self::descriptor_map( isset( $catalog['modules'] ) && is_array( $catalog['modules'] ) ? $catalog['modules'] : array() );
 		$ast            = self::build_ast( $blocks, $document_token, $include_native, $descriptors );
+		$result         = array();
 
-		return array(
-			'success'        => true,
-			'post_id'        => $post_id,
-			'post_status'    => (string) $post->post_status,
-			'builder_enabled' => 'on' === get_post_meta( $post_id, '_et_pb_use_builder', true ),
-			'document_token' => $document_token,
-			'handle_scope'   => 'document_snapshot',
-			'identity_note'  => 'Handles are stable within this exact document snapshot and future atomic mutation batch. Numeric paths are locators only and may shift after structural edits.',
-			'nodes'          => $ast,
-			'node_count'     => self::count_nodes( $ast ),
-			'include_native' => $include_native,
-			'error_code'     => null,
-			'error_message'  => null,
-		);
+		$result['success']         = true;
+		$result['post_id']         = $post_id;
+		$result['post_status']     = (string) $post->post_status;
+		$result['builder_enabled'] = 'on' === get_post_meta( $post_id, '_et_pb_use_builder', true );
+		$result['document_token']  = $document_token;
+		$result['handle_scope']    = 'document_snapshot';
+		$result['identity_note']   = 'Handles are stable within this exact document snapshot and future atomic mutation batch. Numeric paths are locators only and may shift after structural edits.';
+		$result['nodes']           = $ast;
+		$result['node_count']      = self::count_nodes( $ast );
+		$result['include_native']  = $include_native;
+		$result['error_code']      = null;
+		$result['error_message']   = null;
+
+		return $result;
 	}
 
 	/**
@@ -51,8 +52,8 @@ final class DocumentModel {
 	 * This method is intentionally pure so snapshot identity can be regression tested
 	 * without bootstrapping WordPress.
 	 *
-	 * @param array<int, array<string, mixed>>       $blocks Parsed blocks.
-	 * @param array<string, array<string, mixed>>    $descriptors Runtime descriptors keyed by module name.
+	 * @param array<int, array<string, mixed>>    $blocks Parsed blocks.
+	 * @param array<string, array<string, mixed>> $descriptors Runtime descriptors keyed by module name.
 	 * @return array<int, array<string, mixed>>
 	 */
 	public static function build_ast( array $blocks, string $document_token, bool $include_native = false, array $descriptors = array() ): array {
@@ -62,8 +63,8 @@ final class DocumentModel {
 	}
 
 	/**
-	 * @param array<int, array<string, mixed>>       $blocks Parsed blocks.
-	 * @param array<string, array<string, mixed>>    $descriptors Runtime descriptors.
+	 * @param array<int, array<string, mixed>>    $blocks Parsed blocks.
+	 * @param array<string, array<string, mixed>> $descriptors Runtime descriptors.
 	 * @return array<int, array<string, mixed>>
 	 */
 	private static function describe_blocks(
@@ -124,12 +125,12 @@ final class DocumentModel {
 				'compatibility_mode'    => null !== $descriptor && isset( $descriptor['compatibility_mode'] ) ? $descriptor['compatibility_mode'] : 'unknown',
 				'capabilities'          => null !== $descriptor && isset( $descriptor['capabilities'] ) ? $descriptor['capabilities'] : array(),
 				'nesting'               => array(
-					'parent_constraints' => null !== $descriptor && isset( $descriptor['parent'] ) ? $descriptor['parent'] : array(),
+					'parent_constraints'   => null !== $descriptor && isset( $descriptor['parent'] ) ? $descriptor['parent'] : array(),
 					'ancestor_constraints' => null !== $descriptor && isset( $descriptor['ancestor'] ) ? $descriptor['ancestor'] : array(),
-					'allowed_children'   => null !== $descriptor && isset( $descriptor['allowed_children'] ) ? $descriptor['allowed_children'] : array(),
+					'allowed_children'     => null !== $descriptor && isset( $descriptor['allowed_children'] ) ? $descriptor['allowed_children'] : array(),
 				),
 				'authoring'             => array(
-					'schema_available' => null !== $descriptor,
+					'schema_available'  => null !== $descriptor,
 					'clean_break_write' => 'unavailable',
 				),
 			);
