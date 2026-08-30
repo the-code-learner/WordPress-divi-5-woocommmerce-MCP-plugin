@@ -11,6 +11,7 @@ namespace CodeLearner\Divi5WooCommerceMCP;
 
 use CodeLearner\Divi5WooCommerceMCP\Admin\Settings;
 use CodeLearner\Divi5WooCommerceMCP\Divi\Abilities as DiviAbilities;
+use CodeLearner\Divi5WooCommerceMCP\Divi\CleanBreakAbilities;
 use CodeLearner\Divi5WooCommerceMCP\Divi\NativeModuleAbilities;
 use CodeLearner\Divi5WooCommerceMCP\MCP\Server;
 use CodeLearner\Divi5WooCommerceMCP\Telemetry\Telemetry;
@@ -38,6 +39,7 @@ final class Plugin {
 		Abilities::hooks();
 		DiviAbilities::hooks();
 		NativeModuleAbilities::hooks();
+		CleanBreakAbilities::hooks();
 		Server::boot();
 	}
 
