@@ -201,14 +201,14 @@ final class ModuleRegistry {
 	/**
 	 * @return array<int, string>
 	 */
-	private static function string_list_property( object $object, string $property ): array {
-		if ( ! isset( $object->{$property} ) || ! is_array( $object->{$property} ) ) {
+	private static function string_list_property( object $block_type, string $property ): array {
+		if ( ! isset( $block_type->{$property} ) || ! is_array( $block_type->{$property} ) ) {
 			return array();
 		}
 
 		return array_values(
 			array_filter(
-				$object->{$property},
+				$block_type->{$property},
 				static function ( $value ): bool {
 					return is_string( $value ) && '' !== $value;
 				}

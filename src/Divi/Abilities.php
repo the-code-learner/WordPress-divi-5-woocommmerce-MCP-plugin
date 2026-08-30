@@ -244,6 +244,8 @@ final class Abilities {
 	 * @return array<string, mixed>
 	 */
 	public static function list_modules( array $input ): array {
+		unset( $input );
+
 		return ModuleRegistry::catalog();
 	}
 
@@ -324,6 +326,8 @@ final class Abilities {
 	 * @param array<string, mixed> $input Ability input.
 	 */
 	public static function can_read_modules( array $input ): bool {
+		unset( $input );
+
 		return current_user_can( 'edit_posts' );
 	}
 

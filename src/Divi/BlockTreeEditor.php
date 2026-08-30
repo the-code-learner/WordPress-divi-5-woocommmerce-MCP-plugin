@@ -199,18 +199,18 @@ final class BlockTreeEditor {
 	 * blocks are dynamic comments, so their only meaningful inner content is the
 	 * ordered sequence of child block slots.
 	 *
-	 * @param array<string, mixed> $parent Parent block.
+	 * @param array<string, mixed> $container Parent block.
 	 */
-	private static function sync_child_slots( array &$parent ): void {
+	private static function sync_child_slots( array &$container ): void {
 		$slots = array( "\n" );
 
-		foreach ( $parent['innerBlocks'] as $unused ) {
+		foreach ( $container['innerBlocks'] as $unused ) {
 			$slots[] = null;
 			$slots[] = "\n";
 		}
 
-		$parent['innerContent'] = $slots;
-		$parent['innerHTML']    = str_repeat( "\n", count( $parent['innerBlocks'] ) + 1 );
+		$container['innerContent'] = $slots;
+		$container['innerHTML']    = str_repeat( "\n", count( $container['innerBlocks'] ) + 1 );
 	}
 
 	private function __construct() {
