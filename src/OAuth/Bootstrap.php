@@ -17,6 +17,8 @@ final class Bootstrap {
 	 */
 	public static function boot(): void {
 		add_filter( 'wpmedia_mcp_oauth_server_enabled', array( self::class, 'require_https' ), PHP_INT_MAX );
+		add_action( 'init', array( Discovery::class, 'maybe_purge_metadata_cache' ), 30 );
+		add_action( 'template_redirect', array( Discovery::class, 'maybe_disable_metadata_caching' ), 0 );
 		add_action( 'template_redirect', array( Discovery::class, 'maybe_serve_authorization_server_metadata' ), 1 );
 		add_action( 'template_redirect', array( Discovery::class, 'maybe_serve_protected_resource_metadata' ), 1 );
 

@@ -9,8 +9,56 @@ declare(strict_types=1);
 
 namespace CodeLearner\Divi5WooCommerceMCP\OAuth;
 
+use CodeLearner\Divi5WooCommerceMCP\Version;
+
 final class Discovery {
-	private const MCP_REST_PATH = '/wp-json/mcp/mcp-oauth-server';
+	private const MCP_REST_PATH        = '/wp-json/mcp/mcp-oauth-server';
+	private const CACHE_VERSION_OPTION = 'divi5_wc_mcp_oauth_metadata_cache_version';
+
+	/**
+	 * Mark every OAuth metadata response as non-cacheable.
+	 *
+	 * OAuth/MCP discovery is configuration, not page content. A stale public cache
+	 * can keep an old authorization method or a previous 404 alive after the plugin
+	 * has been updated, which prevents clients from discovering the active server.
+	 */
+	public static function maybe_disable_metadata_caching(): void {
+		if ( ! Bootstrap::is_https_url( home_url() ) || ! self::is_metadata_request() ) {
+			return;
+		}
+
+		// LiteSpeed Cache can otherwise override normal WordPress cache headers and
+		// publicly cache these endpoints. This documented integration hook is a no-op
+		// when LiteSpeed Cache is not installed.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache public integration hook.
+		do_action( 'litespeed_control_set_nocache', 'MCP OAuth discovery metadata must stay fresh' );
+		nocache_headers();
+	}
+
+	/**
+	 * Purge stale LiteSpeed copies once per plugin release.
+	 *
+	 * The purge is intentionally URL-scoped and idempotent. It never flushes the
+	 * site's general page cache, and does nothing on hosts without LiteSpeed Cache.
+	 */
+	public static function maybe_purge_metadata_cache(): void {
+		if ( ! Bootstrap::is_https_url( home_url() ) ) {
+			return;
+		}
+
+		if ( Version::NUMBER === (string) get_option( self::CACHE_VERSION_OPTION, '' ) ) {
+			return;
+		}
+
+		$resource_url = get_rest_url( null, 'mcp/mcp-oauth-server' );
+
+		foreach ( self::metadata_urls( home_url(), $resource_url ) as $url ) {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache public integration hook.
+			do_action( 'litespeed_purge_url', $url );
+		}
+
+		update_option( self::CACHE_VERSION_OPTION, Version::NUMBER, false );
+	}
 
 	/**
 	 * Serve authorization-server metadata before the upstream OAuth library handler.
@@ -28,7 +76,9 @@ final class Discovery {
 			return;
 		}
 
-		wp_send_json( self::authorization_server_metadata( home_url(), get_rest_url( null, 'mcp/mcp-oauth-server' ) ) );
+		// Pass 200 explicitly. This also makes the status deterministic if WordPress
+		// classified an otherwise intercepted well-known request before this handler.
+		wp_send_json( self::authorization_server_metadata( home_url(), get_rest_url( null, 'mcp/mcp-oauth-server' ) ), 200 );
 	}
 
 	/**
@@ -53,7 +103,11 @@ final class Discovery {
 			return;
 		}
 
-		wp_send_json( self::protected_resource_metadata( $resource_url, home_url() ) );
+		// This path is handled directly on template_redirect because the pinned
+		// upstream package has no path-inserted rewrite rule. WordPress therefore
+		// marks the request as 404 before we intercept it. An explicit 200 is
+		// required; otherwise clients receive valid RFC 9728 JSON with HTTP 404.
+		wp_send_json( self::protected_resource_metadata( $resource_url, home_url() ), 200 );
 	}
 
 	/**
@@ -112,6 +166,37 @@ final class Discovery {
 		}
 
 		return '/.well-known/oauth-protected-resource/' . ltrim( $path, '/' );
+	}
+
+	/**
+	 * Return every metadata URL whose public cache must be purged on upgrade.
+	 *
+	 * @return string[]
+	 */
+	public static function metadata_urls( string $base_url, string $resource_url ): array {
+		$base_url = rtrim( $base_url, '/' );
+
+		return array(
+			$base_url . '/.well-known/oauth-authorization-server',
+			$base_url . '/.well-known/oauth-protected-resource',
+			$base_url . self::protected_resource_metadata_path( $resource_url ),
+		);
+	}
+
+	/**
+	 * Whether the current request is one of our OAuth discovery documents.
+	 */
+	private static function is_metadata_request(): bool {
+		$discovery = (string) get_query_var( 'mcp_oauth_discovery', '' );
+		if ( in_array( $discovery, array( 'authorization-server', 'protected-resource' ), true ) ) {
+			return true;
+		}
+
+		$request_uri  = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+		$request_path = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
+		$expected     = self::protected_resource_metadata_path( get_rest_url( null, 'mcp/mcp-oauth-server' ) );
+
+		return '' !== $expected && $expected === $request_path;
 	}
 
 	private function __construct() {
