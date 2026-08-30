@@ -77,6 +77,11 @@ final class RuntimeModuleRegistryTest extends TestCase {
 		self::assertSame( 'supported', $parameters['content.innerContent']['write_mapping'] );
 		self::assertArrayHasKey( 'content.innerContent', $authoring );
 		self::assertSame( 'Fixture copy', $authoring['content.innerContent']['default']['desktop']['value'] );
+
+		self::assertSame( 'vendor/opaque', $parameters['opaque']['type'] );
+		self::assertSame( 'supported', $parameters['opaque']['write_mapping'] );
+		self::assertArrayNotHasKey( 'opaque', $authoring );
+
 		self::assertSame( array( 'acme/super-card-item' ), $descriptor['allowed_children'] );
 		self::assertArrayHasKey( 'raw_runtime', $descriptor );
 		self::assertArrayHasKey( 'attributes', $descriptor['raw_runtime'] );
@@ -118,6 +123,7 @@ final class RuntimeModuleRegistryTest extends TestCase {
 		self::assertSame( 'default_leaf_unique_match', $fullwidth['native_provenance'] );
 		self::assertSame( 'medium', $fullwidth['native_confidence'] );
 		self::assertSame( 'module.advanced.forceFullwidth.desktop.value', $fullwidth['native_value_paths']['desktop'] );
+		self::assertSame( 'string', $fullwidth['type'] );
 		self::assertSame( 'off', $fullwidth['default'] );
 		self::assertArrayHasKey( 'module.advanced.sizing.forceFullwidth', $authoring );
 		self::assertSame( 'off', $authoring['module.advanced.sizing.forceFullwidth']['default']['desktop']['value'] );
@@ -165,6 +171,22 @@ final class RuntimeModuleRegistryTest extends TestCase {
 								'name' => 'divi/richtext',
 								'type' => 'field',
 							),
+						),
+					),
+				),
+			),
+			'opaque'    => array(
+				'type'     => 'object',
+				'default'  => array(
+					'desktop' => array( 'value' => 'Opaque default' ),
+				),
+				'settings' => array(
+					'item' => array(
+						'attrName'  => 'opaque',
+						'type'      => 'vendor/opaque',
+						'component' => array(
+							'name' => 'vendor/opaque',
+							'type' => 'field',
 						),
 					),
 				),
