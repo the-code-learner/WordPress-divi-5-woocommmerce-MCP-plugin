@@ -14,6 +14,28 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Browser-based preview and DOM/CSS inspection.
 - Revision-aware publish gate and persistent audit logging.
 
+## [0.4.0] - 2026-08-30
+
+### Added
+
+- Low-level `divi-insert-native-module` MCP authoring for any native `divi/*` module registered by the active Divi 5 runtime.
+- Recursive native module trees for verified relationships such as Accordion/Accordion Item, Tabs/Tab, Slider/Slide, Contact Form/Contact Field, Pricing Tables/Pricing Table, and other relationships exposed by the installed runtime.
+- Exact runtime-native attribute preservation so module-specific design, responsive, preset, variable, and advanced settings can be authored from live schemas without hard-coded semantic translation.
+
+### Security
+
+- Native module insertion remains restricted to editable draft, pending, or auto-draft content and requires both `edit_post` and `unfiltered_html`.
+- Every inserted node must be a registered semantic `divi/*` block, unknown node properties are rejected, and every parent/child relationship is validated before serialization or persistence.
+
+### Changed
+
+- Bumped the plugin version to `0.4.0`.
+- Kept the existing constrained `divi-insert-module` ability unchanged for backward-compatible semantic authoring.
+
+### Tests
+
+- Added regression coverage for recursive native module serialization, invalid nested relationships, non-Divi block rejection, unknown node property rejection, and MCP ability registration metadata.
+
 ## [0.3.2] - 2026-08-30
 
 ### Fixed

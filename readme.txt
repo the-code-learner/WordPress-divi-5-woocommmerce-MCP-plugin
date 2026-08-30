@@ -3,7 +3,7 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 0.3.2
+Stable tag: 0.4.0
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -13,6 +13,8 @@ Secure MCP access for WordPress with native Divi 5 authoring, OAuth, controlled 
 == Description ==
 
 MCP Bridge for Divi 5 and WooCommerce builds on the WordPress Abilities API and the official WordPress MCP Adapter.
+
+Version 0.4.0 adds low-level runtime-native insertion for any registered `divi/*` module. MCP clients can now use live Divi schemas to insert validated nested module trees such as Accordion/Accordion Item, Tabs/Tab, Slider/Slide, Contact Form/Contact Field, Pricing Tables/Pricing Table, and other runtime-discovered relationships while preserving the exact native attribute object.
 
 Version 0.3.2 aligns the Divi module catalog with WordPress's native parameterless ability contract by omitting its input schema and using zero-argument callbacks.
 
@@ -53,6 +55,7 @@ The plugin exposes these bridge abilities through the WordPress MCP Adapter gate
 * `divi5-woocommerce-mcp/divi-list-modules` - list native Divi modules registered by the active runtime.
 * `divi5-woocommerce-mcp/divi-get-module-schema` - inspect one registered module's attributes, defaults, supports, and nesting constraints.
 * `divi5-woocommerce-mcp/divi-insert-module` - insert a constrained semantic module at a validated parent path and child index.
+* `divi5-woocommerce-mcp/divi-insert-native-module` - insert any runtime-registered native `divi/*` module tree using exact native attributes and validated nesting rules.
 * `divi5-woocommerce-mcp/divi-delete-module` - delete one native module without permitting removal of the root or last usable layout.
 * `divi5-woocommerce-mcp/divi-move-module` - move or reorder a native module with final-index semantics.
 * `divi5-woocommerce-mcp/divi-duplicate-module` - deep-copy a module, its children, and its native design attributes.
@@ -79,6 +82,10 @@ Yes. `divi-save-layout` uses Divi's own conversion layer first and rejects `divi
 
 Yes. Call `divi-get-layout` first, locate the module path and current attribute object, then call `divi-update-module` with a recursive attribute patch. This low-level write requires permission to edit the post and the `unfiltered_html` capability because Divi attribute objects can contain rich content and advanced settings.
 
+= Can MCP insert nested native Divi modules discovered at runtime? =
+
+Yes. Call `divi-list-modules` and `divi-get-module-schema`, then use `divi-insert-native-module` with the exact native attributes returned by the installed Divi runtime. Every node must be a registered `divi/*` module and every parent/child relationship is validated before the draft is written. This low-level ability also requires `unfiltered_html`.
+
 = Can these abilities overwrite a published page directly? =
 
 No. Divi editing is currently restricted to draft, pending, or auto-draft content. Publishing remains a separate controlled action.
@@ -101,13 +108,20 @@ Yes. `divi5-woocommerce-mcp/update-self` can update only this plugin, requires t
 
 = Is this plugin production ready? =
 
-No. Version 0.3.2 is an early development release. Native Divi editing is intentionally conservative and draft-first while the supported semantic module surface expands.
+No. Version 0.4.0 is an early development release. Native Divi editing is intentionally conservative and draft-first while the supported semantic and runtime-native module surface expands.
 
 == Screenshots ==
 
 Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
+
+= 0.4.0 =
+* Add `divi-insert-native-module` for runtime-registered native `divi/*` modules.
+* Support recursively nested native module trees while validating every parent/child relationship against the active Divi registry.
+* Preserve exact runtime-native Divi attribute objects for advanced design, responsive, preset, and module-specific settings.
+* Keep the low-level native insertion path draft-only and gated by `edit_post` plus `unfiltered_html`.
+* Add regression coverage for nested serialization, invalid hierarchy rejection, non-Divi block rejection, and MCP ability metadata.
 
 = 0.3.2 =
 * Register `divi-list-modules` as a native parameterless WordPress ability with no input schema.
