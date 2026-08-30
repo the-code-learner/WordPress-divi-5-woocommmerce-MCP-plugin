@@ -352,6 +352,7 @@ final class RuntimeModuleRegistry {
 				if ( in_array( $value, array( 'native', 'converted', 'legacy' ), true ) ) {
 					return $value;
 				}
+			}
 		}
 
 		return 0 === strpos( $name, 'divi/' ) ? 'native' : 'unknown';
