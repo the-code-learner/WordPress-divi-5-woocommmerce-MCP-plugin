@@ -14,6 +14,19 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Browser-based preview and DOM/CSS inspection.
 - Revision-aware publish gate and persistent audit logging.
 
+## [0.1.7] - 2026-08-30
+
+### Fixed
+
+- Restored MCP `tools/list` discovery on WordPress 6.9 when the pinned `wordpress/mcp-adapter` 0.6.1 adds its default shared-ability hooks after the one-shot Abilities API registration window has already fired.
+- Added an idempotent compatibility layer that ensures `mcp-adapter/discover-abilities`, `mcp-adapter/get-ability-info`, and `mcp-adapter/execute-ability` are registered during `wp_abilities_api_init` before either MCP server is created.
+- Preserved existing upstream registrations when present so the compatibility layer can coexist safely with a future upstream timing fix.
+- Added regression coverage for the exact shared-tool contract consumed by the OAuth MCP server.
+
+### Changed
+
+- Bumped the plugin version to `0.1.7`.
+
 ## [0.1.6] - 2026-08-30
 
 ### Added

@@ -19,6 +19,9 @@ final class Server {
 			return;
 		}
 
+		// wordpress/mcp-adapter 0.6.1 otherwise registers its shared abilities
+		// after WordPress 6.9's one-shot Abilities API init window has closed.
+		SharedAbilitiesCompatibility::hooks();
 		OAuthBootstrap::boot();
 		McpAdapter::instance();
 	}

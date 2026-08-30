@@ -3,7 +3,7 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 0.1.6
+Stable tag: 0.1.7
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -13,6 +13,8 @@ Secure MCP foundations for WordPress, Divi 5, WooCommerce, browser-based preview
 == Description ==
 
 MCP Bridge for Divi 5 and WooCommerce is an early-stage plugin that builds on the WordPress Abilities API and the official WordPress MCP Adapter.
+
+Version 0.1.7 fixes MCP tool discovery on WordPress 6.9 when the pinned WordPress MCP Adapter 0.6.1 registers its three shared abilities after the one-shot Abilities API initialization window. The plugin now idempotently ensures `mcp-adapter/discover-abilities`, `mcp-adapter/get-ability-info`, and `mcp-adapter/execute-ability` are registered in time for both the existing WordPress-authenticated server and the OAuth server.
 
 Version 0.1.6 completes the next ChatGPT OAuth interoperability layer after authorization and consent. It adds standards-compliant RS256 `private_key_jwt` verification for ChatGPT token-endpoint client authentication using the official ChatGPT JWKS, while retaining `none` for public clients. It also serves the RFC 9728 path-inserted protected-resource metadata URL required for the path-based MCP endpoint.
 
@@ -85,7 +87,7 @@ Yes, for this plugin only. `divi5-woocommerce-mcp/get-update-status` forces a fr
 
 Yes. Go to Settings > MCP Bridge and disable GitHub updates. The option is enabled by default. When disabled, MCP self-update is also unavailable.
 
-= What telemetry is sent in version 0.1.6? =
+= What telemetry is sent in version 0.1.7? =
 
 A low-frequency heartbeat sends a random installation identifier, plugin version, WordPress version, PHP major/minor version, and Divi/WooCommerce detection booleans. The first heartbeat is delayed and later heartbeats are scheduled approximately weekly with jitter.
 
@@ -99,7 +101,7 @@ Yes. Usage telemetry and automatic error reporting are separate Settings > MCP B
 
 = Is the plugin production ready? =
 
-No. Version 0.1.6 is still an early development release focused on MCP foundations, OAuth interoperability, update tooling, and infrastructure for future implementation.
+No. Version 0.1.7 is still an early development release focused on MCP foundations, OAuth interoperability, update tooling, and infrastructure for future implementation.
 
 = Why is the license GPL-2.0-or-later? =
 
@@ -110,6 +112,12 @@ WordPress.org requires GPL-compatible licensing. A non-commercial restriction is
 Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
+
+= 0.1.7 =
+* Fix WordPress 6.9 MCP tool discovery when WordPress MCP Adapter 0.6.1 wires its shared ability hooks after the Abilities API initialization window.
+* Ensure `mcp-adapter/discover-abilities`, `mcp-adapter/get-ability-info`, and `mcp-adapter/execute-ability` are registered early enough for `tools/list` on both MCP endpoints.
+* Keep the workaround idempotent so existing or future upstream registrations are not replaced.
+* Add regression coverage for the exact three-tool contract used by the OAuth server.
 
 = 0.1.6 =
 * Add real ChatGPT `private_key_jwt` client authentication at `/oauth/token` with RS256 signature verification against the official ChatGPT JWKS.
