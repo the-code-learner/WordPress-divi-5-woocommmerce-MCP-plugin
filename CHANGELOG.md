@@ -14,6 +14,24 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Browser-based preview and DOM/CSS inspection.
 - Revision-aware publish gate and persistent audit logging.
 
+## [0.1.5] - 2026-08-30
+
+### Fixed
+
+- ChatGPT OAuth authorization no longer fails with `Unknown OAuth client.` when ChatGPT's Client ID Metadata Document prefers `private_key_jwt` but also advertises the server-supported public-client method `none`.
+- Added narrowly scoped ChatGPT CIMD normalization that selects `none` only when the fetched metadata is served from an HTTPS `chatgpt.com` CIMD path, is exactly self-bound to the requested `client_id`, and explicitly includes `none` in `token_endpoint_auth_methods_supported`.
+- Added the stable `https://chatgpt.com/oauth/client.json` identifier to the upstream trusted-publisher filter while leaving callback-specific ChatGPT identifiers on the existing validated unverified-client consent path.
+- Added regression coverage for stable and callback-specific ChatGPT CIMD URLs, auth-method intersection, self-binding, host/path scoping, and negative cases.
+
+### Security
+
+- The compatibility layer does not add `private_key_jwt` server support or bypass CIMD validation; the authorization server continues to advertise and accept only public-client token authentication (`none`).
+- Existing upstream SSRF/DNS-rebinding protection, exact redirect-URI validation, PKCE S256, client-ID self-binding, token rotation, revocation, and WordPress-user binding remain unchanged.
+
+### Changed
+
+- Bumped the plugin version to `0.1.5`.
+
 ## [0.1.4] - 2026-08-30
 
 ### Added
@@ -65,7 +83,7 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Delayed first heartbeat and approximately weekly one-shot heartbeat scheduling with bounded jitter.
 - Non-blocking telemetry HTTP client with short timeout, zero redirects, and strict per-endpoint payload allowlists.
 - Client-side redaction for URLs, email addresses, absolute paths, query fragments, and common secret/token patterns.
-- Automatic fatal-error reporting restricted to errors originating from this plugin, with plugin-relative stack information only.
+- Automatic fatal-error reporting restricted to errors originating inside this plugin, with plugin-relative stack information only.
 - WordPress privacy-policy helper disclosure for the current telemetry behavior.
 - Unit coverage for opt-out behavior, payload minimization, installation identity generation, sanitization, plugin-file ownership, and scheduling bounds.
 

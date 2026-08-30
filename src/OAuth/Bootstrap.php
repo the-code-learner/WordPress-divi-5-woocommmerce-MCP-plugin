@@ -28,6 +28,7 @@ final class Bootstrap {
 			add_action( 'admin_notices', array( self::class, 'render_https_required_notice' ) );
 		}
 
+		ChatGPTCimdCompatibility::register();
 		OAuthServerBootstrap::instance();
 	}
 
