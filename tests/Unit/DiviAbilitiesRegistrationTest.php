@@ -76,9 +76,11 @@ namespace CodeLearner\Divi5WooCommerceMCP\Tests\Unit {
 			self::assertSame( 0, $schema['properties']['index']['minimum'] );
 		}
 
-		public function test_parameterless_module_catalog_accepts_wordpress_null_input(): void {
-			$result = Abilities::list_modules( null );
+		public function test_module_catalog_uses_native_parameterless_ability_contract(): void {
+			$definition = $this->abilities['divi5-woocommerce-mcp/divi-list-modules'];
+			$result     = Abilities::list_modules();
 
+			self::assertArrayNotHasKey( 'input_schema', $definition );
 			self::assertTrue( $result['success'] );
 			self::assertSame( 0, $result['module_count'] );
 		}

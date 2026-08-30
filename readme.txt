@@ -3,7 +3,7 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 0.3.1
+Stable tag: 0.3.2
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -13,6 +13,8 @@ Secure MCP access for WordPress with native Divi 5 authoring, OAuth, controlled 
 == Description ==
 
 MCP Bridge for Divi 5 and WooCommerce builds on the WordPress Abilities API and the official WordPress MCP Adapter.
+
+Version 0.3.2 aligns the Divi module catalog with WordPress's native parameterless ability contract by omitting its input schema and using zero-argument callbacks.
 
 Version 0.3.1 fixes the parameterless Divi module catalog so WordPress can pass its native `null` input value through the ability permission and execution callbacks.
 
@@ -99,13 +101,17 @@ Yes. `divi5-woocommerce-mcp/update-self` can update only this plugin, requires t
 
 = Is this plugin production ready? =
 
-No. Version 0.3.1 is an early development release. Native Divi editing is intentionally conservative and draft-first while the supported semantic module surface expands.
+No. Version 0.3.2 is an early development release. Native Divi editing is intentionally conservative and draft-first while the supported semantic module surface expands.
 
 == Screenshots ==
 
 Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
+
+= 0.3.2 =
+* Register `divi-list-modules` as a native parameterless WordPress ability with no input schema.
+* Match the established zero-argument callback contract used by the plugin status abilities.
 
 = 0.3.1 =
 * Accept WordPress's native null input for the parameterless `divi-list-modules` ability callbacks.
