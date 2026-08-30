@@ -72,6 +72,6 @@ final class PluginActivationState {
 			return true;
 		}
 
-		return $this->network_active === is_plugin_active_for_network( $plugin_basename );
+		return is_plugin_active_for_network( $plugin_basename ) === $this->network_active;
 	}
 }
