@@ -3,113 +3,89 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 0.1.9
+Stable tag: 0.2.0
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Secure MCP foundations for WordPress, Divi 5, WooCommerce, browser-based preview, and controlled publishing workflows.
+Secure MCP access for WordPress with native Divi 5 authoring, OAuth, controlled updates, and foundations for WooCommerce workflows.
 
 == Description ==
 
-MCP Bridge for Divi 5 and WooCommerce is an early-stage plugin that builds on the WordPress Abilities API and the official WordPress MCP Adapter.
+MCP Bridge for Divi 5 and WooCommerce builds on the WordPress Abilities API and the official WordPress MCP Adapter.
 
-Version 0.1.9 fixes a live RFC 9728 interoperability failure discovered against the development site: the path-inserted protected-resource metadata URL returned the correct JSON body with HTTP 404 because WordPress had already classified the direct well-known path as not found before the plugin intercepted it. The plugin now sends an explicit HTTP 200 for its OAuth metadata responses. OAuth discovery documents are also marked non-cacheable, including through LiteSpeed Cache's public no-cache hook, and stale metadata URLs are purged once per plugin version so old OAuth metadata or cached 404 responses cannot survive an update.
+Version 0.2.0 adds the first native Divi 5 authoring surface. When Divi 5 is available, authenticated MCP clients can inspect a page's native Divi block tree, replace draft content from a constrained semantic layout, and patch the attribute object of an existing native Divi block. Semantic layouts are first represented with supported core Divi shortcodes and then passed through Divi 5's own `Conversion::maybeConvertContent()` API so saved content uses native Divi 5 blocks that remain editable in the Visual Builder.
 
-Version 0.1.8 aligns ChatGPT token exchange with the public-client OAuth path implemented by the pinned OAuth server. Authorization-server metadata now advertises only `token_endpoint_auth_method=none`, which ChatGPT supports through its CIMD method intersection, so Authorization Code + PKCE can proceed without the custom `private_key_jwt` preflight. The same release validates ChatGPT's exact MCP `resource` parameter on both authorization and token requests; access tokens remain audience-bound to `/wp-json/mcp/mcp-oauth-server`.
+The initial semantic layout vocabulary supports sections, rows, columns, Text, Button, Image, Code, and Divider modules. The lower-level module patch ability can update the native Divi 5 attribute object returned by layout inspection, enabling design settings such as typography, spacing, sizing, backgrounds, responsive values, links, presets, and other attributes supported by the installed Divi version.
 
-Version 0.1.7 fixes MCP tool discovery on WordPress 6.9 when the pinned WordPress MCP Adapter 0.6.1 registers its three shared abilities after the one-shot Abilities API initialization window. The plugin now idempotently ensures `mcp-adapter/discover-abilities`, `mcp-adapter/get-ability-info`, and `mcp-adapter/execute-ability` are registered in time for both the existing WordPress-authenticated server and the OAuth server.
+Normal Divi write abilities are intentionally restricted to draft, pending, or auto-draft content. A revision is requested before each write, `_et_pb_use_builder` is kept enabled, and the existing publish gate remains separate from editing.
 
-Version 0.1.6 added an experimental RS256 `private_key_jwt` verifier for ChatGPT token-endpoint client authentication and the RFC 9728 path-inserted protected-resource metadata URL. Version 0.1.8 no longer advertises or registers that experimental verifier in the runtime token path because the embedded token endpoint natively implements the standards-supported `none` + PKCE public-client flow.
+Version 0.2.0 also fixes MCP exposure metadata for the bridge's own abilities. The WordPress MCP Adapter requires `meta.mcp.public=true`; the plugin now sets that flag explicitly while keeping direct REST exposure disabled.
 
-Version 0.1.5 fixes ChatGPT OAuth client resolution when ChatGPT's Client ID Metadata Document prefers `private_key_jwt` but also advertises the public-client method `none`. The compatibility layer normalizes the fetched ChatGPT CIMD only for upstream authorization-time validation when `none` is explicitly supported by the client.
+The OAuth MCP endpoint is `/wp-json/mcp/mcp-oauth-server`. It uses Authorization Code with PKCE S256, ChatGPT Client ID Metadata Document compatibility, bearer access tokens, rotating refresh tokens, revocation, issuer/resource binding, and RFC 9728 protected-resource discovery. OAuth is enabled only when the canonical WordPress Site Address uses HTTPS.
 
-Version 0.1.4 adds an OAuth 2.1 authentication path for remote MCP clients such as ChatGPT while retaining the existing WordPress-authenticated MCP endpoint. OAuth clients connect to `/wp-json/mcp/mcp-oauth-server`, discover the authorization server from the site's OAuth metadata, authorize through the normal WordPress login flow, and use Authorization Code with PKCE S256. The OAuth layer issues bearer access tokens and rotating refresh tokens and supports revocation.
+WordPress Application Password values remain internal to the OAuth implementation and are never intended to be placed in MCP URLs, client configuration, logs, or project memory.
 
-The OAuth endpoint is enabled only when the canonical WordPress Site Address uses HTTPS. WordPress Application Passwords are used only as internal, revocable session anchors by the OAuth implementation: their raw values are discarded immediately and are not entered into the MCP client, placed in URLs, or exposed by this plugin.
+The plugin remains self-contained for its runtime MCP functionality. Divi 5 and WooCommerce are detected integrations and are not bundled. No Playwright, Puppeteer, Chromium, Node daemon, Docker service, arbitrary SQL console, arbitrary PHP execution, or generic filesystem write surface is required or exposed.
 
-Version 0.1.3 added plugin-scoped MCP update operations for the current development cycle. An authenticated MCP client can force a fresh stable GitHub release check, read the current and available plugin versions, and update only this plugin when the caller has the WordPress `update_plugins` capability and supplies an `expected_version` that exactly matches the release discovered by the updater.
+Usage telemetry and automatic fatal-error reporting are separate administrator settings during the temporary pre-WordPress.org GitHub distribution phase and can be disabled independently under Settings > MCP Bridge. Before WordPress.org submission these controls must be reviewed and changed to explicit opt-in as required by the distribution policy.
 
-Usage telemetry and error reporting are separate administrator settings and are enabled by default in this temporary pre-WordPress.org GitHub distribution phase. Either setting can be disabled under Settings > MCP Bridge.
+== MCP Abilities ==
 
-The usage heartbeat sends only a random local installation identifier, plugin version, WordPress version, PHP major/minor version, and booleans indicating whether Divi and WooCommerce are detected. The telemetry service stores only a keyed hash of the installation identifier. Automatic error reports are restricted to fatal errors originating inside this plugin and include only sanitized plugin-owned diagnostics.
+The plugin exposes these bridge abilities through the WordPress MCP Adapter gateway:
 
-The plugin does not intentionally send the site URL or domain, administrator email, usernames or user IDs, post/page/product/order/customer content, database values, cookies, request bodies, tokens, secrets, or arbitrary plugin/theme lists. The telemetry receiver is hosted at the project Cloudflare Workers endpoint. Error records are retained for 30 days and inactive installation records for 120 days by the receiver configuration.
-
-Before submission to WordPress.org, usage telemetry and automatic error reporting must both be changed to disabled-by-default explicit opt-in, and the privacy/readme disclosure must be reviewed against the current Plugin Directory requirements.
-
-The project is designed to remain self-contained for its core MCP functionality. It does not require Playwright, Puppeteer, Chromium, a Node daemon, Docker, or an external SaaS service for MCP operation. The pre-WordPress.org telemetry service is optional and can be disabled.
-
-Planned capabilities include permission-gated WordPress CRUD, semantic Divi 5 editing, optional WooCommerce operations, WordPress-rendered preview, browser-side DOM/CSS inspection, revisions, audit logging, and a separate publish gate.
-
-Before first WordPress.org submission, replace the Contributors placeholder with the exact WordPress.org username. The temporary GitHub updater and Update URI are intended for GitHub-distributed builds and will be removed from the WordPress.org distribution.
+* `divi5-woocommerce-mcp/get-status` - plugin, Divi, native Divi authoring, and WooCommerce status.
+* `divi5-woocommerce-mcp/get-update-status` - fresh stable GitHub release check.
+* `divi5-woocommerce-mcp/update-self` - update only this plugin to an exact discovered stable version.
+* `divi5-woocommerce-mcp/divi-get-layout` - inspect the native Divi 5 block tree and block paths.
+* `divi5-woocommerce-mcp/divi-save-layout` - replace draft content with a semantic layout converted by Divi into native blocks.
+* `divi5-woocommerce-mcp/divi-update-module` - patch one native Divi 5 block's attributes by the path returned from `divi-get-layout`.
 
 == Installation ==
 
-1. Install a production ZIP built from a tagged release.
+1. Install a production ZIP built from a tagged GitHub release.
 2. Activate the plugin.
-3. Confirm that WordPress 6.9 or newer is running.
-4. Confirm that the WordPress Site Address uses HTTPS before configuring an OAuth MCP client.
-5. Divi 5 and WooCommerce are detected if installed; they are not bundled.
-6. GitHub release checks are enabled by default. They can be disabled under Settings > MCP Bridge.
-7. Usage telemetry is enabled by default in current GitHub-distributed builds and can be disabled independently.
-8. Automatic fatal-error reporting is enabled by default in current GitHub-distributed builds and can be disabled independently.
+3. Confirm WordPress 6.9 or newer is running.
+4. Confirm the WordPress Site Address uses HTTPS before configuring OAuth MCP clients.
+5. Install and activate Divi 5 to use native Divi authoring abilities.
+6. WooCommerce is optional and remains a separate dependency.
+7. Connect the MCP client to `/wp-json/mcp/mcp-oauth-server` and use OAuth authentication.
 
 The GitHub source checkout requires Composer and is not itself the production package.
 
 == Frequently Asked Questions ==
 
-= Which endpoint should I use with an OAuth client such as ChatGPT? =
+= Are pages created with the Divi abilities editable in the Visual Builder? =
 
-Use `/wp-json/mcp/mcp-oauth-server` on your HTTPS WordPress site and select OAuth authentication in the client. The client discovers the protected-resource and authorization-server metadata, opens the normal browser-based WordPress authorization flow, and then exchanges the authorization code for bearer and refresh tokens. Do not put a WordPress username, Application Password, bearer token, or other credential into the MCP server URL.
+Yes, when Divi 5's native conversion API is available. `divi-save-layout` converts supported semantic modules through Divi's own conversion layer and saves native `wp:divi/*` blocks instead of wrapping the entire design in one HTML/Text module.
 
-= Does OAuth replace the existing WordPress-authenticated MCP endpoint? =
+= Can MCP edit an already existing native Divi 5 module? =
 
-No. OAuth is additive. The existing WordPress-authenticated MCP server remains available for clients that already support WordPress authentication, while OAuth-capable remote clients can use the dedicated OAuth endpoint.
+Yes. Call `divi-get-layout` first, locate the module path and current attribute object, then call `divi-update-module` with a recursive attribute patch. This low-level write requires permission to edit the post and the `unfiltered_html` capability because Divi attribute objects can contain rich content and advanced settings.
 
-= How does ChatGPT authenticate at the token endpoint? =
+= Can these abilities overwrite a published page directly? =
 
-The authorization server advertises `none` as its token-endpoint client-authentication method. ChatGPT's CIMD metadata supports `none`, so ChatGPT uses the public-client Authorization Code + PKCE S256 exchange implemented natively by the embedded OAuth server. The authorization and token requests must carry the exact protected MCP `resource`, and the issued access token is audience-bound to that same `/wp-json/mcp/mcp-oauth-server` URL.
+No. Divi editing is currently restricted to draft, pending, or auto-draft content. Publishing remains a separate controlled action.
 
-= Does this plugin include Divi 5 or WooCommerce? =
+= Does the plugin include Divi 5 or WooCommerce? =
 
-No. Both products are detected at runtime and remain separate dependencies.
+No. Both remain separate products and are detected at runtime.
 
-= Does this require a headless browser or Node.js service? =
+= Which MCP endpoint should OAuth clients use? =
 
-No. The target runtime is PHP + WordPress + browser-side JavaScript. Node tooling is not required at runtime.
+Use `/wp-json/mcp/mcp-oauth-server` on the HTTPS WordPress site. Do not put WordPress usernames, Application Passwords, bearer tokens, refresh tokens, or authorization codes into the MCP server URL.
 
-= How are updates delivered before the WordPress.org listing is available? =
+= How are updates delivered before WordPress.org? =
 
-Stable GitHub Releases are used temporarily. The checker ignores GitHub prereleases, does not fall back to tags or branches, and requires the production release asset named `mcp-bridge-for-divi-woocommerce.zip`.
+Stable GitHub Releases are the temporary distribution channel. The updater ignores prereleases and expects the production asset `mcp-bridge-for-divi-woocommerce.zip`.
 
-= Can MCP update the plugin during development? =
+= Can MCP update this plugin? =
 
-Yes, for this plugin only. `divi5-woocommerce-mcp/get-update-status` forces a fresh stable GitHub release check and reports current/available versions. `divi5-woocommerce-mcp/update-self` requires the WordPress `update_plugins` capability and an exact `expected_version`. It does not accept a plugin path, package URL, arbitrary source, downgrade, or prerelease from the MCP client.
+Yes. `divi5-woocommerce-mcp/update-self` can update only this plugin, requires the `update_plugins` capability, and requires an exact `expected_version` matching the stable release discovered by the updater.
 
-= Can I disable GitHub update checks? =
+= Is this plugin production ready? =
 
-Yes. Go to Settings > MCP Bridge and disable GitHub updates. The option is enabled by default. When disabled, MCP self-update is also unavailable.
-
-= What telemetry is sent in version 0.1.9? =
-
-A low-frequency heartbeat sends a random installation identifier, plugin version, WordPress version, PHP major/minor version, and Divi/WooCommerce detection booleans. The first heartbeat is delayed and later heartbeats are scheduled approximately weekly with jitter.
-
-= What error information is sent? =
-
-Only fatal errors whose source file is inside this plugin are automatically reported. Messages are redacted client-side for URLs, email addresses, absolute paths, and common secret/token patterns. Stack information is limited to plugin-owned relative paths and at most ten frames.
-
-= Can I disable telemetry and error reporting? =
-
-Yes. Usage telemetry and automatic error reporting are separate Settings > MCP Bridge options. Both are enabled by default only during the current pre-WordPress.org GitHub distribution phase and can be disabled independently.
-
-= Is the plugin production ready? =
-
-No. Version 0.1.9 is still an early development release focused on MCP foundations, OAuth interoperability, update tooling, and infrastructure for future implementation.
-
-= Why is the license GPL-2.0-or-later? =
-
-WordPress.org requires GPL-compatible licensing. A non-commercial restriction is not compatible with WordPress.org distribution.
+No. Version 0.2.0 is an early development release. Native Divi editing is intentionally conservative and draft-first while the supported semantic module surface expands.
 
 == Screenshots ==
 
@@ -117,72 +93,42 @@ Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
 
+= 0.2.0 =
+* Add native Divi 5 layout inspection through `divi-get-layout`.
+* Add semantic draft layout authoring through Divi 5's official conversion API with Section, Row, Column, Text, Button, Image, Code, and Divider support.
+* Add native Divi 5 block attribute patching through `divi-update-module`.
+* Restrict Divi writes to draft/pending content and request a revision before updates.
+* Keep `_et_pb_use_builder` enabled for generated/edited content.
+* Explicitly expose bridge abilities to the MCP Adapter with `meta.mcp.public=true` while keeping REST exposure disabled.
+* Add regression coverage for semantic layout hierarchy/escaping and MCP exposure metadata.
+
 = 0.1.9 =
-* Fix the RFC 9728 path-inserted protected-resource metadata response so it returns HTTP 200 instead of valid JSON under a WordPress 404 status.
-* Mark OAuth discovery metadata non-cacheable and use LiteSpeed Cache's public no-cache integration hook when available.
-* Purge only the OAuth discovery URLs once per plugin version so stale metadata and cached 404 responses do not survive an update.
-* Add regression coverage for the complete authorization-server/root/path-inserted metadata URL set.
+* Fix RFC 9728 protected-resource metadata responses so valid discovery JSON returns HTTP 200 instead of a WordPress 404 status.
+* Mark OAuth discovery metadata non-cacheable and purge stale discovery URLs once per plugin version.
 
 = 0.1.8 =
-* Advertise only the `none` token endpoint authentication method that the embedded OAuth server natively implements; ChatGPT supports this public-client method through CIMD negotiation.
-* Remove the custom `private_key_jwt` verifier from the active token-exchange path while preserving Authorization Code + PKCE S256, CIMD, issuer binding, refresh tokens, and revocation.
-* Require the exact protected MCP `resource` parameter on both `/oauth/authorize` and `/oauth/token`.
-* Keep access tokens audience-bound to `/wp-json/mcp/mcp-oauth-server` and add regression coverage for resource matching and public-client metadata.
+* Align ChatGPT token exchange with the upstream public-client `none` + PKCE flow and require the exact protected MCP resource.
 
 = 0.1.7 =
-* Fix WordPress 6.9 MCP tool discovery when WordPress MCP Adapter 0.6.1 wires its shared ability hooks after the Abilities API initialization window.
-* Ensure `mcp-adapter/discover-abilities`, `mcp-adapter/get-ability-info`, and `mcp-adapter/execute-ability` are registered early enough for `tools/list` on both MCP endpoints.
-* Keep the workaround idempotent so existing or future upstream registrations are not replaced.
-* Add regression coverage for the exact three-tool contract used by the OAuth server.
+* Ensure the MCP Adapter's three shared gateway abilities are registered in time on WordPress 6.9.
 
 = 0.1.6 =
-* Add experimental ChatGPT `private_key_jwt` client authentication at `/oauth/token` with RS256 signature verification against the official ChatGPT JWKS.
-* Validate signed client assertions before the upstream token endpoint can consume an authorization code or refresh token.
-* Require assertion issuer and subject to match the exact HTTPS ChatGPT CIMD client ID and require the audience to match this site's token endpoint.
-* Continue supporting public clients using `token_endpoint_auth_method=none`.
-* Advertise `private_key_jwt`, RS256 token-auth signing support, and the protected MCP resource in authorization-server metadata.
-* Add the RFC 9728 path-inserted protected-resource metadata location for `/wp-json/mcp/mcp-oauth-server` while preserving the upstream root discovery document.
-* Add cryptographic and discovery regression tests without introducing a new JWT dependency.
+* Add the RFC 9728 path-inserted protected-resource metadata location and experimental signed-client compatibility work later superseded by 0.1.8.
 
 = 0.1.5 =
-* Fix ChatGPT OAuth client resolution when the ChatGPT CIMD prefers `private_key_jwt` while also advertising the server-supported public-client method `none`.
-* Restrict compatibility normalization to HTTPS ChatGPT CIMD URLs whose metadata is exactly self-bound and explicitly advertises `none`.
-* Mark the stable `https://chatgpt.com/oauth/client.json` client ID as a verified publisher while leaving callback-specific client IDs on the validated unverified-client consent path.
-* Preserve the existing PKCE, redirect validation, SSRF/DNS-rebinding protections, refresh-token rotation, and revocation.
+* Fix ChatGPT CIMD client resolution while preserving strict HTTPS, self-binding, and supported-auth-method checks.
 
 = 0.1.4 =
-* Add an OAuth 2.1 MCP endpoint at `/wp-json/mcp/mcp-oauth-server` while preserving the existing WordPress-authenticated endpoint.
-* Add Authorization Code with PKCE S256, Client ID Metadata Document support, bearer access tokens, rotating refresh tokens, and revocation through the embedded OAuth layer.
-* Advertise `offline_access` in OAuth authorization-server discovery for clients that use refresh-token connectivity.
-* Disable OAuth when the canonical WordPress Site Address is not HTTPS.
-* Keep WordPress Application Password values internal to the OAuth session implementation and out of MCP URLs and client configuration.
-* Add CI validation for the reviewed OAuth dependency revision and unit coverage for HTTPS/discovery behavior.
+* Add the OAuth MCP endpoint with Authorization Code, PKCE S256, CIMD, bearer tokens, rotating refresh tokens, and revocation.
 
 = 0.1.3 =
-* Add `divi5-woocommerce-mcp/get-update-status` to force a fresh stable GitHub release check and report current/available versions.
-* Add permission-gated `divi5-woocommerce-mcp/update-self` for this plugin only.
-* Require exact `expected_version` matching before installation and reject prereleases, downgrades, other plugin paths, and arbitrary package names.
-* Audit update status checks and self-update outcomes without storing credentials or package secrets.
-* Add unit coverage for the self-update guardrails.
+* Add stable GitHub release status and permission-gated self-update abilities.
 
 = 0.1.2 =
-* Add separate usage telemetry and automatic error-reporting administrator settings.
-* Enable both settings by default for the temporary pre-WordPress.org GitHub distribution, with independent opt-out controls.
-* Add a random local installation ID, delayed weekly heartbeat scheduling with jitter, non-blocking HTTP delivery, payload allowlists, and client-side redaction.
-* Limit automatic error reports to fatal errors originating inside the plugin.
-* Add WordPress privacy-policy helper content and tests covering opt-out, payload minimization, sanitization, identity generation, and scheduling.
-* Document the mandatory future migration to explicit opt-in before WordPress.org submission.
+* Add configurable telemetry and plugin-owned fatal-error reporting for the development distribution phase.
 
 = 0.1.1 =
-* Update the official WordPress MCP Adapter dependency to the 0.6.x stable line.
-* Add a temporary stable-only GitHub Releases updater using the production ZIP asset.
-* Enable GitHub update checks by default with an administrator setting to disable them.
-* Add the plugin Update URI for external distribution.
-* Add unit coverage for the update setting.
+* Update the WordPress MCP Adapter dependency and add the temporary stable GitHub Releases updater.
 
 = 0.1.0 =
-* Initial repository and plugin bootstrap.
-* Add official WordPress MCP Adapter dependency through Composer.
-* Add Divi and WooCommerce runtime detection.
-* Add a permission-gated, read-only integration status Ability.
-* Add SemVer validation, CI, Plugin Check, production ZIP build, and guarded WordPress.org deployment workflow.
+* Initial plugin bootstrap with WordPress Abilities API, MCP Adapter integration, Divi/WooCommerce detection, CI, and production ZIP build.
