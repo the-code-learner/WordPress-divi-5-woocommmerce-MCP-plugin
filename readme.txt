@@ -3,7 +3,7 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 0.1.5
+Stable tag: 0.1.6
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -14,7 +14,9 @@ Secure MCP foundations for WordPress, Divi 5, WooCommerce, browser-based preview
 
 MCP Bridge for Divi 5 and WooCommerce is an early-stage plugin that builds on the WordPress Abilities API and the official WordPress MCP Adapter.
 
-Version 0.1.5 fixes ChatGPT OAuth interoperability when ChatGPT's Client ID Metadata Document prefers `private_key_jwt` but also advertises the public-client method `none`. The plugin keeps the authorization server public-client-only and selects `none` only when ChatGPT's fetched metadata is self-bound to the requested client ID and explicitly advertises that method.
+Version 0.1.6 completes the next ChatGPT OAuth interoperability layer after authorization and consent. It adds standards-compliant RS256 `private_key_jwt` verification for ChatGPT token-endpoint client authentication using the official ChatGPT JWKS, while retaining `none` for public clients. It also serves the RFC 9728 path-inserted protected-resource metadata URL required for the path-based MCP endpoint.
+
+Version 0.1.5 fixes ChatGPT OAuth client resolution when ChatGPT's Client ID Metadata Document prefers `private_key_jwt` but also advertises the public-client method `none`. The compatibility layer normalizes the fetched ChatGPT CIMD only for upstream authorization-time validation; version 0.1.6 additionally implements the preferred signed client-authentication method at the token endpoint.
 
 Version 0.1.4 adds an OAuth 2.1 authentication path for remote MCP clients such as ChatGPT while retaining the existing WordPress-authenticated MCP endpoint. OAuth clients connect to `/wp-json/mcp/mcp-oauth-server`, discover the authorization server from the site's OAuth metadata, authorize through the normal WordPress login flow, and use Authorization Code with PKCE S256. The OAuth layer issues bearer access tokens and rotating refresh tokens and supports revocation.
 
@@ -53,11 +55,15 @@ The GitHub source checkout requires Composer and is not itself the production pa
 
 = Which endpoint should I use with an OAuth client such as ChatGPT? =
 
-Use `/wp-json/mcp/mcp-oauth-server` on your HTTPS WordPress site and select OAuth authentication in the client. The client discovers the authorization and token endpoints through the site's OAuth metadata, then opens the normal browser-based WordPress authorization flow. Do not put a WordPress username, Application Password, bearer token, or other credential into the MCP server URL.
+Use `/wp-json/mcp/mcp-oauth-server` on your HTTPS WordPress site and select OAuth authentication in the client. The client discovers the protected-resource and authorization-server metadata, opens the normal browser-based WordPress authorization flow, and then exchanges the authorization code for bearer and refresh tokens. Do not put a WordPress username, Application Password, bearer token, or other credential into the MCP server URL.
 
 = Does OAuth replace the existing WordPress-authenticated MCP endpoint? =
 
 No. OAuth is additive. The existing WordPress-authenticated MCP server remains available for clients that already support WordPress authentication, while OAuth-capable remote clients can use the dedicated OAuth endpoint.
+
+= How does ChatGPT authenticate at the token endpoint? =
+
+The authorization server advertises both `none` and `private_key_jwt`. ChatGPT may use its preferred `private_key_jwt` method. Assertions are restricted to HTTPS ChatGPT CIMD client IDs, must use RS256, must be signed by the key selected from the official `https://chatgpt.com/oauth/jwks.json` JWKS, and must bind issuer/subject to the exact client ID and audience to this site's `/oauth/token` endpoint. Public clients that use `none` remain supported.
 
 = Does this plugin include Divi 5 or WooCommerce? =
 
@@ -73,13 +79,13 @@ Stable GitHub Releases are used temporarily. The checker ignores GitHub prerelea
 
 = Can MCP update the plugin during development? =
 
-Yes, for this plugin only. `divi5-woocommerce-mcp/get-update-status` forces a fresh release check and reports the current and available versions. `divi5-woocommerce-mcp/update-self` requires the WordPress `update_plugins` capability and an exact `expected_version`. It does not accept a plugin path, package URL, arbitrary source, downgrade, or prerelease from the MCP client.
+Yes, for this plugin only. `divi5-woocommerce-mcp/get-update-status` forces a fresh stable GitHub release check and reports current/available versions. `divi5-woocommerce-mcp/update-self` requires the WordPress `update_plugins` capability and an exact `expected_version`. It does not accept a plugin path, package URL, arbitrary source, downgrade, or prerelease from the MCP client.
 
 = Can I disable GitHub update checks? =
 
 Yes. Go to Settings > MCP Bridge and disable GitHub updates. The option is enabled by default. When disabled, MCP self-update is also unavailable.
 
-= What telemetry is sent in version 0.1.5? =
+= What telemetry is sent in version 0.1.6? =
 
 A low-frequency heartbeat sends a random installation identifier, plugin version, WordPress version, PHP major/minor version, and Divi/WooCommerce detection booleans. The first heartbeat is delayed and later heartbeats are scheduled approximately weekly with jitter.
 
@@ -93,7 +99,7 @@ Yes. Usage telemetry and automatic error reporting are separate Settings > MCP B
 
 = Is the plugin production ready? =
 
-No. Version 0.1.5 is still an early development release focused on MCP foundations, OAuth interoperability, update tooling, and infrastructure for future implementation.
+No. Version 0.1.6 is still an early development release focused on MCP foundations, OAuth interoperability, update tooling, and infrastructure for future implementation.
 
 = Why is the license GPL-2.0-or-later? =
 
@@ -105,11 +111,20 @@ Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
 
+= 0.1.6 =
+* Add real ChatGPT `private_key_jwt` client authentication at `/oauth/token` with RS256 signature verification against the official ChatGPT JWKS.
+* Validate signed client assertions before the upstream token endpoint can consume an authorization code or refresh token.
+* Require assertion issuer and subject to match the exact HTTPS ChatGPT CIMD client ID and require the audience to match this site's token endpoint.
+* Continue supporting public clients using `token_endpoint_auth_method=none`.
+* Advertise `private_key_jwt`, RS256 token-auth signing support, and the protected MCP resource in authorization-server metadata.
+* Add the RFC 9728 path-inserted protected-resource metadata location for `/wp-json/mcp/mcp-oauth-server` while preserving the upstream root discovery document.
+* Add cryptographic and discovery regression tests without introducing a new JWT dependency.
+
 = 0.1.5 =
 * Fix ChatGPT OAuth client resolution when the ChatGPT CIMD prefers `private_key_jwt` while also advertising the server-supported public-client method `none`.
 * Restrict compatibility normalization to HTTPS ChatGPT CIMD URLs whose metadata is exactly self-bound and explicitly advertises `none`.
 * Mark the stable `https://chatgpt.com/oauth/client.json` client ID as a verified publisher while leaving callback-specific client IDs on the validated unverified-client consent path.
-* Preserve the existing PKCE, redirect validation, SSRF/DNS-rebinding protections, refresh-token rotation, revocation, and public-client-only token endpoint.
+* Preserve the existing PKCE, redirect validation, SSRF/DNS-rebinding protections, refresh-token rotation, and revocation.
 
 = 0.1.4 =
 * Add an OAuth 2.1 MCP endpoint at `/wp-json/mcp/mcp-oauth-server` while preserving the existing WordPress-authenticated endpoint.
