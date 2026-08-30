@@ -44,9 +44,9 @@ final class Discovery {
 			return;
 		}
 
-		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
-		$request_path = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
-		$resource_url = get_rest_url( null, 'mcp/mcp-oauth-server' );
+		$request_uri   = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+		$request_path  = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
+		$resource_url  = get_rest_url( null, 'mcp/mcp-oauth-server' );
 		$expected_path = self::protected_resource_metadata_path( $resource_url );
 
 		if ( '' === $expected_path || $expected_path !== $request_path ) {
@@ -62,7 +62,7 @@ final class Discovery {
 	 * @return array<string, mixed>
 	 */
 	public static function authorization_server_metadata( string $base_url, ?string $resource_url = null ): array {
-		$base_url    = rtrim( $base_url, '/' );
+		$base_url     = rtrim( $base_url, '/' );
 		$resource_url = null !== $resource_url && '' !== $resource_url ? $resource_url : $base_url . self::MCP_REST_PATH;
 
 		return array(
