@@ -161,22 +161,11 @@ final class DocumentModel {
 	 * @return array<string, mixed>
 	 */
 	private static function normalized_properties( array $attributes, array $descriptor ): array {
-		$properties = array();
-		$parameters = isset( $descriptor['parameters'] ) && is_array( $descriptor['parameters'] ) ? $descriptor['parameters'] : array();
+		$parameters = isset( $descriptor['parameter_graph'] ) && is_array( $descriptor['parameter_graph'] )
+			? $descriptor['parameter_graph']
+			: ( isset( $descriptor['parameters'] ) && is_array( $descriptor['parameters'] ) ? $descriptor['parameters'] : array() );
 
-		foreach ( $parameters as $parameter ) {
-			if ( ! is_array( $parameter ) || ! isset( $parameter['semantic_path'] ) || ! is_string( $parameter['semantic_path'] ) ) {
-				continue;
-			}
-
-			$path = $parameter['semantic_path'];
-
-			if ( self::path_exists( $attributes, $path ) ) {
-				$properties[ $path ] = self::value_at_path( $attributes, $path );
-			}
-		}
-
-		return $properties;
+		return RuntimeAttributeNormalizer::normalize( $attributes, $parameters );
 	}
 
 	/**
@@ -199,41 +188,6 @@ final class DocumentModel {
 		$parts = explode( '/', $name, 2 );
 
 		return isset( $parts[0] ) && '' !== $parts[0] ? $parts[0] : 'unknown';
-	}
-
-	/**
-	 * @param array<string, mixed> $values Values.
-	 */
-	private static function path_exists( array $values, string $path ): bool {
-		$current = $values;
-
-		foreach ( explode( '.', $path ) as $segment ) {
-			if ( ! is_array( $current ) || ! array_key_exists( $segment, $current ) ) {
-				return false;
-			}
-
-			$current = $current[ $segment ];
-		}
-
-		return true;
-	}
-
-	/**
-	 * @param array<string, mixed> $values Values.
-	 * @return mixed|null
-	 */
-	private static function value_at_path( array $values, string $path ) {
-		$current = $values;
-
-		foreach ( explode( '.', $path ) as $segment ) {
-			if ( ! is_array( $current ) || ! array_key_exists( $segment, $current ) ) {
-				return null;
-			}
-
-			$current = $current[ $segment ];
-		}
-
-		return $current;
 	}
 
 	/**

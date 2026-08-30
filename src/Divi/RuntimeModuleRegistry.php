@@ -149,34 +149,37 @@ final class RuntimeModuleRegistry {
 	 * @return array<string, mixed>
 	 */
 	private static function describe_type( string $name, object $type, bool $include_raw ): array {
-		$attributes       = isset( $type->attributes ) && is_array( $type->attributes ) ? $type->attributes : array();
-		$supports         = isset( $type->supports ) && is_array( $type->supports ) ? $type->supports : array();
-		$defaults         = self::default_attributes( $name, $attributes );
-		$allowed_children = self::allowed_children( $name, $type );
-		$provider         = self::provider( $name );
-		$parameter_graph  = self::parameter_graph( $attributes, $defaults );
-		$result           = array(
-			'name'               => $name,
-			'title'              => isset( $type->title ) && is_string( $type->title ) ? $type->title : $name,
-			'category'           => isset( $type->category ) && is_string( $type->category ) ? $type->category : '',
-			'provider'           => $provider,
-			'provenance'         => array(
+		$attributes           = isset( $type->attributes ) && is_array( $type->attributes ) ? $type->attributes : array();
+		$supports             = isset( $type->supports ) && is_array( $type->supports ) ? $type->supports : array();
+		$defaults             = self::default_attributes( $name, $attributes );
+		$allowed_children     = self::allowed_children( $name, $type );
+		$provider             = self::provider( $name );
+		$parameter_graph      = RuntimeParameterNormalizer::normalize( $attributes, $defaults );
+		$authoring_parameters = self::authoring_parameters( $parameter_graph );
+		$result               = array(
+			'name'                      => $name,
+			'title'                     => isset( $type->title ) && is_string( $type->title ) ? $type->title : $name,
+			'category'                  => isset( $type->category ) && is_string( $type->category ) ? $type->category : '',
+			'provider'                  => $provider,
+			'provenance'                => array(
 				'source'             => 'wp_block_type_registry',
 				'block_namespace'    => $provider['id'],
 				'registration_class' => get_class( $type ),
 			),
-			'compatibility_mode' => self::compatibility_mode( $name, $type ),
-			'introspection'      => array(
+			'compatibility_mode'        => self::compatibility_mode( $name, $type ),
+			'introspection'             => array(
 				'level'            => array() !== $attributes ? 'runtime-schema' : 'registration-only',
 				'parameter_graph'  => array() !== $parameter_graph ? 'available' : 'unavailable',
 				'raw_runtime_data' => $include_raw ? 'included' : 'available-on-describe',
 			),
-			'parent'             => self::string_list_property( $type, 'parent' ),
-			'ancestor'           => self::string_list_property( $type, 'ancestor' ),
-			'allowed_children'   => $allowed_children,
-			'parameter_count'    => count( $parameter_graph ),
-			'parameters'         => $parameter_graph,
-			'capabilities'       => self::module_capabilities( $parameter_graph, $allowed_children ),
+			'parent'                    => self::string_list_property( $type, 'parent' ),
+			'ancestor'                  => self::string_list_property( $type, 'ancestor' ),
+			'allowed_children'          => $allowed_children,
+			'parameter_count'           => count( $parameter_graph ),
+			'authoring_parameter_count' => count( $authoring_parameters ),
+			'parameter_graph'           => $parameter_graph,
+			'parameters'                => $authoring_parameters,
+			'capabilities'              => self::module_capabilities( $parameter_graph, $allowed_children ),
 		);
 
 		if ( $include_raw ) {
@@ -194,96 +197,62 @@ final class RuntimeModuleRegistry {
 	}
 
 	/**
-	 * @param array<string, mixed> $attributes Runtime attribute schema.
-	 * @param array<string, mixed> $defaults Runtime defaults.
+	 * Keep the mutation-facing parameter list limited to runtime-proven value paths.
+	 * The complete introspection graph remains available in parameter_graph.
+	 *
+	 * @param array<int, array<string, mixed>> $parameters Normalized parameters.
 	 * @return array<int, array<string, mixed>>
 	 */
-	private static function parameter_graph( array $attributes, array $defaults ): array {
-		$parameters = array();
+	private static function authoring_parameters( array $parameters ): array {
+		$authoring = array();
 
-		foreach ( $attributes as $name => $schema ) {
-			if ( ! is_string( $name ) || ! is_array( $schema ) ) {
+		foreach ( $parameters as $parameter ) {
+			if ( ! isset( $parameter['write_mapping'] ) || 'supported' !== $parameter['write_mapping'] ) {
 				continue;
 			}
 
-			$parameters[ $name ] = self::normalize_parameter(
-				$name,
-				$name,
-				$schema,
-				self::value_at_path( $defaults, $name ),
-				'block_attribute_schema'
-			);
-			self::discover_attr_names( $schema, $defaults, $parameters );
-		}
+			$native_path = isset( $parameter['native_path'] ) && is_string( $parameter['native_path'] )
+				? $parameter['native_path']
+				: '';
+			$value_paths = isset( $parameter['native_value_paths'] ) && is_array( $parameter['native_value_paths'] )
+				? $parameter['native_value_paths']
+				: array();
 
-		ksort( $parameters );
-
-		return array_values( $parameters );
-	}
-
-	/**
-	 * @param array<string, mixed>                $node Runtime schema fragment.
-	 * @param array<string, mixed>                $defaults Runtime defaults.
-	 * @param array<string, array<string, mixed>> $parameters Normalized parameters.
-	 */
-	private static function discover_attr_names( array $node, array $defaults, array &$parameters ): void {
-		if ( isset( $node['attrName'] ) && is_string( $node['attrName'] ) && '' !== $node['attrName'] ) {
-			$path = $node['attrName'];
-
-			$parameters[ $path ] = self::normalize_parameter(
-				$path,
-				$path,
-				$node,
-				self::value_at_path( $defaults, $path ),
-				'divi_runtime_settings'
-			);
-		}
-
-		foreach ( $node as $value ) {
-			if ( is_array( $value ) ) {
-				self::discover_attr_names( $value, $defaults, $parameters );
+			if ( '' === $native_path ) {
+				continue;
 			}
-		}
-	}
 
-	/**
-	 * @param array<string, mixed> $schema Runtime schema fragment.
-	 * @param mixed                $default_value Default value.
-	 * @return array<string, mixed>
-	 */
-	private static function normalize_parameter( string $semantic_path, string $native_path, array $schema, $default_value, string $source ): array {
-		$devices       = self::discover_keys( $schema, array( 'desktop', 'tablet', 'phone' ) );
-		$default_keys  = is_array( $default_value ) ? self::discover_keys( $default_value, array( 'desktop', 'tablet', 'phone' ) ) : array();
-		$devices       = array_values( array_unique( array_merge( $devices, $default_keys ) ) );
-		$component     = isset( $schema['component'] ) && is_array( $schema['component'] ) ? $schema['component'] : array();
-		$features      = isset( $schema['features'] ) && is_array( $schema['features'] ) ? $schema['features'] : array();
-		$allowed_units = self::discover_scalar_list( $schema, array( 'allowedUnits', 'allowed_units', 'units' ) );
-		$constraints   = array();
-
-		foreach ( array( 'minimum', 'maximum', 'minLength', 'maxLength', 'pattern', 'minItems', 'maxItems' ) as $constraint ) {
-			if ( array_key_exists( $constraint, $schema ) ) {
-				$constraints[ $constraint ] = $schema[ $constraint ];
+			if ( isset( $value_paths['default'] ) && $native_path === $value_paths['default'] ) {
+				$parameter['devices']     = array();
+				$parameter['breakpoints'] = array();
+				$authoring[]              = $parameter;
+				continue;
 			}
+
+			$legacy_default = array();
+			$device_values  = isset( $parameter['default_by_device'] ) && is_array( $parameter['default_by_device'] )
+				? $parameter['default_by_device']
+				: array();
+
+			foreach ( array( 'desktop', 'tablet', 'phone' ) as $device ) {
+				$expected_path = $native_path . '.' . $device . '.value';
+
+				if ( isset( $value_paths[ $device ] ) && $expected_path === $value_paths[ $device ] && array_key_exists( $device, $device_values ) ) {
+					$legacy_default[ $device ] = array( 'value' => $device_values[ $device ] );
+				}
+			}
+
+			if ( ! isset( $legacy_default['desktop'] ) ) {
+				continue;
+			}
+
+			$parameter['default']     = $legacy_default;
+			$parameter['devices']     = array_values( array_keys( $legacy_default ) );
+			$parameter['breakpoints'] = $parameter['devices'];
+			$authoring[]              = $parameter;
 		}
 
-		return array(
-			'semantic_path'        => $semantic_path,
-			'native_path'          => $native_path,
-			'native_provenance'    => $source,
-			'type'                 => self::infer_type( $schema, $component, $features ),
-			'default'              => $default_value,
-			'enum'                 => isset( $schema['enum'] ) && is_array( $schema['enum'] ) ? array_values( $schema['enum'] ) : array(),
-			'constraints'          => $constraints,
-			'allowed_units'        => $allowed_units,
-			'responsive'           => array() !== $devices ? 'supported' : 'unknown',
-			'devices'              => $devices,
-			'breakpoints'          => $devices,
-			'hover'                => self::feature_status( $schema, array( 'hover' ) ),
-			'sticky'               => self::feature_status( $schema, array( 'sticky' ) ),
-			'preset_support'       => self::feature_status( $schema, array( 'preset' ) ),
-			'design_variable'      => self::feature_status( $schema, array( 'designVariable', 'designVariables' ) ),
-			'global_value_support' => self::feature_status( $schema, array( 'globalValue', 'globalValues' ) ),
-		);
+		return $authoring;
 	}
 
 	/**
@@ -418,128 +387,6 @@ final class RuntimeModuleRegistry {
 				}
 			)
 		);
-	}
-
-	/**
-	 * @param array<string, mixed> $values Values.
-	 * @return mixed|null
-	 */
-	private static function value_at_path( array $values, string $path ) {
-		$current = $values;
-
-		foreach ( explode( '.', $path ) as $segment ) {
-			if ( ! is_array( $current ) || ! array_key_exists( $segment, $current ) ) {
-				return null;
-			}
-
-			$current = $current[ $segment ];
-		}
-
-		return $current;
-	}
-
-	/**
-	 * @param array<string, mixed> $schema Runtime schema fragment.
-	 * @param array<string, mixed> $component Component metadata.
-	 * @param array<string, mixed> $features Feature metadata.
-	 */
-	private static function infer_type( array $schema, array $component, array $features ): string {
-		if ( isset( $schema['type'] ) && is_string( $schema['type'] ) ) {
-			return $schema['type'];
-		}
-
-		if ( isset( $features['dynamicContent'] ) && is_array( $features['dynamicContent'] )
-			&& isset( $features['dynamicContent']['type'] ) && is_string( $features['dynamicContent']['type'] )
-		) {
-			return $features['dynamicContent']['type'];
-		}
-
-		if ( isset( $component['name'] ) && is_string( $component['name'] ) && '' !== $component['name'] ) {
-			return $component['name'];
-		}
-
-		if ( isset( $component['type'] ) && is_string( $component['type'] ) && '' !== $component['type'] ) {
-			return $component['type'];
-		}
-
-		return 'unknown';
-	}
-
-	/**
-	 * @param array<string, mixed> $node Runtime schema fragment.
-	 * @param array<int, string>   $targets Target keys.
-	 * @return array<int, string>
-	 */
-	private static function discover_keys( array $node, array $targets ): array {
-		$found = array();
-
-		foreach ( $node as $key => $value ) {
-			if ( is_string( $key ) && in_array( $key, $targets, true ) ) {
-				$found[] = $key;
-			}
-
-			if ( is_array( $value ) ) {
-				$found = array_merge( $found, self::discover_keys( $value, $targets ) );
-			}
-		}
-
-		return array_values( array_unique( $found ) );
-	}
-
-	/**
-	 * @param array<string, mixed> $node Runtime schema fragment.
-	 * @param array<int, string>   $targets Target keys.
-	 * @return array<int, string>
-	 */
-	private static function discover_scalar_list( array $node, array $targets ): array {
-		foreach ( $node as $key => $value ) {
-			if ( is_string( $key ) && in_array( $key, $targets, true ) && is_array( $value ) ) {
-				return array_values(
-					array_filter(
-						$value,
-						static function ( $item ): bool {
-							return is_scalar( $item );
-						}
-					)
-				);
-			}
-
-			if ( is_array( $value ) ) {
-				$nested = self::discover_scalar_list( $value, $targets );
-
-				if ( array() !== $nested ) {
-					return $nested;
-				}
-			}
-		}
-
-		return array();
-	}
-
-	/**
-	 * @param array<string, mixed> $node Runtime schema fragment.
-	 * @param array<int, string>   $keys Feature keys.
-	 */
-	private static function feature_status( array $node, array $keys ): string {
-		foreach ( $node as $key => $value ) {
-			if ( is_string( $key ) && in_array( $key, $keys, true ) ) {
-				if ( false === $value || null === $value ) {
-					return 'unavailable';
-				}
-
-				return 'supported';
-			}
-
-			if ( is_array( $value ) ) {
-				$status = self::feature_status( $value, $keys );
-
-				if ( 'unknown' !== $status ) {
-					return $status;
-				}
-			}
-		}
-
-		return 'unknown';
 	}
 
 	/**
