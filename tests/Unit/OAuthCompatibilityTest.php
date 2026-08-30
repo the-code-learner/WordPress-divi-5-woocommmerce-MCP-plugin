@@ -52,6 +52,20 @@ final class OAuthCompatibilityTest extends TestCase {
 		);
 	}
 
+	public function test_metadata_cache_urls_include_both_rfc9728_locations(): void {
+		self::assertSame(
+			array(
+				'https://example.com/.well-known/oauth-authorization-server',
+				'https://example.com/.well-known/oauth-protected-resource',
+				'https://example.com/.well-known/oauth-protected-resource/wp-json/mcp/mcp-oauth-server',
+			),
+			Discovery::metadata_urls(
+				'https://example.com/',
+				'https://example.com/wp-json/mcp/mcp-oauth-server'
+			)
+		);
+	}
+
 	public function test_protected_resource_metadata_is_bound_to_exact_mcp_resource(): void {
 		$metadata = Discovery::protected_resource_metadata(
 			'https://example.com/wp-json/mcp/mcp-oauth-server',
