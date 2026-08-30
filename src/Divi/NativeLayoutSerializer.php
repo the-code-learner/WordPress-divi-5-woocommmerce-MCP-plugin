@@ -87,7 +87,7 @@ final class NativeLayoutSerializer {
 
 		$block_name = self::MODULES[ $type ];
 		$attributes = self::block_attributes( $node, $type );
-		$comment     = '<!-- wp:' . $block_name . self::serialize_attributes( $attributes );
+		$comment    = '<!-- wp:' . $block_name . self::serialize_attributes( $attributes );
 
 		if ( ! $is_container ) {
 			return $comment . ' /-->';
