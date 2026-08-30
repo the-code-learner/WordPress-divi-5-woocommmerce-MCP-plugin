@@ -18,6 +18,6 @@ final class VersionTest extends TestCase {
 	}
 
 	public function test_current_version(): void {
-		self::assertSame( '0.4.0', Version::NUMBER );
+		self::assertSame( '1.0.0', Version::NUMBER );
 	}
 }
