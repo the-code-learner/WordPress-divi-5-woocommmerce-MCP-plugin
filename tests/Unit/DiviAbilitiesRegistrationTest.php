@@ -75,5 +75,12 @@ namespace CodeLearner\Divi5WooCommerceMCP\Tests\Unit {
 			self::assertSame( '^\\d+(?:\\.\\d+)*$', $schema['properties']['path']['pattern'] );
 			self::assertSame( 0, $schema['properties']['index']['minimum'] );
 		}
+
+		public function test_parameterless_module_catalog_accepts_wordpress_null_input(): void {
+			$result = Abilities::list_modules( null );
+
+			self::assertTrue( $result['success'] );
+			self::assertSame( 0, $result['module_count'] );
+		}
 	}
 }
