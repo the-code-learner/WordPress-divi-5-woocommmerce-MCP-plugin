@@ -362,7 +362,7 @@ final class RuntimeNativeWriter {
 		$paths = isset( $parameter['native_value_paths'] ) && is_array( $parameter['native_value_paths'] )
 			? $parameter['native_value_paths']
 			: array();
-		$path = isset( $paths[ $breakpoint ] ) && is_string( $paths[ $breakpoint ] ) ? $paths[ $breakpoint ] : '';
+		$path  = isset( $paths[ $breakpoint ] ) && is_string( $paths[ $breakpoint ] ) ? $paths[ $breakpoint ] : '';
 
 		return self::valid_native_path( $path ) ? $path : '';
 	}
@@ -376,7 +376,7 @@ final class RuntimeNativeWriter {
 		$paths = isset( $parameter['native_state_paths'] ) && is_array( $parameter['native_state_paths'] )
 			? $parameter['native_state_paths']
 			: array();
-		$path = '';
+		$path  = '';
 
 		if ( isset( $paths[ $breakpoint ] ) && is_array( $paths[ $breakpoint ] ) && isset( $paths[ $breakpoint ][ $state ] ) && is_string( $paths[ $breakpoint ][ $state ] ) ) {
 			$path = $paths[ $breakpoint ][ $state ];
@@ -513,7 +513,7 @@ final class RuntimeNativeWriter {
 			} elseif ( is_array( $value ) ) {
 				self::collect_string_paths( $value, $paths );
 			}
-		}
+	}
 	}
 
 	/**
@@ -623,7 +623,7 @@ final class RuntimeNativeWriter {
 	 * @param array<string, mixed> $values Values.
 	 * @return array<string, mixed>
 	 */
-	private static function mutate_custom_attribute_records( array $values, string $path, string $name, string $target_element, string $value, bool $unset ): array {
+	private static function mutate_custom_attribute_records( array $values, string $path, string $name, string $target_element, string $value, bool $remove ): array {
 		$records = self::path_value( $values, $path );
 		$records = is_array( $records ) ? $records : array();
 		$next    = array();
@@ -639,7 +639,7 @@ final class RuntimeNativeWriter {
 			$record_target = isset( $record['targetElement'] ) && is_string( $record['targetElement'] ) ? $record['targetElement'] : '';
 
 			if ( $record_name === $name && $record_target === $target_element ) {
-				if ( $unset ) {
+				if ( $remove ) {
 					continue;
 				}
 				if ( ! $matched ) {
@@ -655,7 +655,7 @@ final class RuntimeNativeWriter {
 			$next[] = $record;
 		}
 
-		if ( ! $unset && ! $matched ) {
+		if ( ! $remove && ! $matched ) {
 			$next[] = array(
 				'name'          => $name,
 				'value'         => $value,
@@ -663,7 +663,7 @@ final class RuntimeNativeWriter {
 			);
 		}
 
-		if ( $unset && array() === $next ) {
+		if ( $remove && array() === $next ) {
 			return self::unset_path_value( $values, $path );
 		}
 
