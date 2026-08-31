@@ -65,7 +65,16 @@ jobs:
         run: ./scripts/build-zip.sh
 
       - name: Verify distribution contents
-        run: ./scripts/verify-dist.sh build/mcp-bridge-for-divi-woocommerce.zip
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e build/mcp-bridge-for-divi-woocommerce/.github
+          test ! -e build/mcp-bridge-for-divi-woocommerce/tests
+          test ! -e build/mcp-bridge-for-divi-woocommerce/node_modules
+          test ! -e build/mcp-bridge-for-divi-woocommerce/.phpunit.result.cache
+          test ! -e build/mcp-bridge-for-divi-woocommerce/languages/.gitkeep
+          test -e build/mcp-bridge-for-divi-woocommerce/vendor
+          test -e build/mcp-bridge-for-divi-woocommerce/divi-5-woocommerce-mcp.php
 
       - name: Create tag and GitHub Release
         env:
