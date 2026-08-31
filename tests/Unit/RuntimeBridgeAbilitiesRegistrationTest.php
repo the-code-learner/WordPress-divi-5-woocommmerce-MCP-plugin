@@ -42,6 +42,7 @@ namespace CodeLearner\Divi5WooCommerceMCP\Tests\Unit {
 				'divi5-woocommerce-mcp/divi-runtime-describe-registry',
 				'divi5-woocommerce-mcp/divi-document-native-validate',
 				'divi5-woocommerce-mcp/divi-document-native-mutate',
+				'divi5-woocommerce-mcp/divi-screenshot',
 				'divi5-woocommerce-mcp/divi-render',
 			);
 
@@ -62,6 +63,21 @@ namespace CodeLearner\Divi5WooCommerceMCP\Tests\Unit {
 			self::assertContains( 'responsive', $ops );
 			self::assertContains( 'state', $ops );
 			self::assertContains( 'preset', $ops );
+		}
+
+		public function test_screenshot_schema_exposes_arbitrary_viewport_and_is_readonly(): void {
+			$ability = $this->abilities['divi5-woocommerce-mcp/divi-screenshot'];
+			$schema  = $ability['input_schema'];
+
+			self::assertSame( array( 'post_id', 'width' ), $schema['required'] );
+			self::assertFalse( $schema['additionalProperties'] );
+			self::assertSame( 240, $schema['properties']['width']['minimum'] );
+			self::assertSame( 4096, $schema['properties']['width']['maximum'] );
+			self::assertTrue( $schema['properties']['full_page']['default'] );
+			self::assertSame( array( 'png', 'jpeg' ), $schema['properties']['format']['enum'] );
+			self::assertSame( 'png', $schema['properties']['format']['default'] );
+			self::assertTrue( $ability['meta']['annotations']['readonly'] );
+			self::assertFalse( $ability['meta']['annotations']['destructive'] );
 		}
 
 		public function test_native_validation_is_readonly_and_native_mutation_is_destructive(): void {
