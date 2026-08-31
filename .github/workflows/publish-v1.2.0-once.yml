@@ -1,0 +1,85 @@
+name: Publish v1.2.0 once
+
+on:
+  push:
+    branches:
+      - ops/publish-v1.2.0
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish v1.2.0
+    runs-on: ubuntu-latest
+    env:
+      TARGET_SHA: 57ee127fe6ae07aa0b7ae54a2d1be211a028e63b
+      TAG_VERSION: 1.2.0
+      TAG_NAME: v1.2.0
+
+    steps:
+      - name: Checkout exact release commit
+        uses: actions/checkout@v4
+        with:
+          ref: 57ee127fe6ae07aa0b7ae54a2d1be211a028e63b
+          fetch-depth: 0
+
+      - name: Verify exact main target
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --tags
+          test "$(git rev-parse origin/main)" = "$TARGET_SHA"
+          if git rev-parse "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "$TAG_NAME")" = "$TARGET_SHA"
+          fi
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Require Composer lock
+        shell: bash
+        run: test -f composer.lock
+
+      - name: Validate release metadata and lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          composer validate --strict
+          TAG_VERSION="$TAG_VERSION" composer run validate-version
+
+      - name: Install locked production dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+      - name: Verify OAuth dependency integrity
+        run: composer run validate-oauth-dependency
+
+      - name: Audit locked dependencies
+        run: composer audit --locked
+
+      - name: Build distributable ZIP
+        run: ./scripts/build-zip.sh
+
+      - name: Verify distribution contents
+        run: ./scripts/verify-dist.sh build/mcp-bridge-for-divi-woocommerce.zip
+
+      - name: Create tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "$TAG_NAME release already exists; leaving it untouched."
+            exit 0
+          fi
+          gh release create "$TAG_NAME" \
+            build/mcp-bridge-for-divi-woocommerce.zip \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$TARGET_SHA" \
+            --title "$TAG_NAME" \
+            --generate-notes
