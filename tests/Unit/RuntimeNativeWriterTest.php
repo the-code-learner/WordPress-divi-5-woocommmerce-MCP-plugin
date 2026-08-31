@@ -37,6 +37,100 @@ final class RuntimeNativeWriterTest extends TestCase {
 		self::assertSame( 'divi-custom-attributes-adapter', $plan['operations'][0]['validation_level'] );
 	}
 
+	public function test_generic_custom_attribute_inserts_divi_record_shape(): void {
+		$token  = str_repeat( '2', 64 );
+		$handle = DocumentModel::snapshot_handle( $token, 0, 'divi/text' );
+		$plan   = RuntimeNativeWriter::plan(
+			$this->blocks(),
+			$token,
+			array(
+				array(
+					'op'     => 'attribute',
+					'handle' => $handle,
+					'name'   => 'title',
+					'value'  => 'Accessible title',
+				),
+			),
+			$this->descriptors(),
+			array( 'desktop' )
+		);
+
+		self::assertTrue( $plan['valid'] );
+		self::assertSame(
+			array(
+				array(
+					'name'          => 'title',
+					'value'         => 'Accessible title',
+					'targetElement' => '',
+				),
+			),
+			$plan['blocks'][0]['attrs']['module']['decoration']['attributes']['desktop']['value']['attributes']
+		);
+		self::assertSame( 'module.decoration.attributes.desktop.value.attributes', $plan['operations'][0]['native_path'] );
+	}
+
+	public function test_generic_custom_attribute_updates_by_identity_and_preserves_unrelated_records(): void {
+		$token  = str_repeat( '3', 64 );
+		$handle = DocumentModel::snapshot_handle( $token, 0, 'divi/text' );
+		$plan   = RuntimeNativeWriter::plan(
+			$this->blocks_with_custom_attributes(),
+			$token,
+			array(
+				array(
+					'op'     => 'attribute',
+					'handle' => $handle,
+					'name'   => 'title',
+					'value'  => 'Updated title',
+				),
+			),
+			$this->descriptors(),
+			array( 'desktop' )
+		);
+
+		$records = $plan['blocks'][0]['attrs']['module']['decoration']['attributes']['desktop']['value']['attributes'];
+
+		self::assertTrue( $plan['valid'] );
+		self::assertCount( 2, $records );
+		self::assertSame( 'data-existing', $records[0]['name'] );
+		self::assertSame( 'keep', $records[0]['value'] );
+		self::assertSame( 'title', $records[1]['name'] );
+		self::assertSame( 'Updated title', $records[1]['value'] );
+		self::assertSame( '', $records[1]['targetElement'] );
+	}
+
+	public function test_generic_custom_attribute_unset_removes_only_matching_identity(): void {
+		$token  = str_repeat( '4', 64 );
+		$handle = DocumentModel::snapshot_handle( $token, 0, 'divi/text' );
+		$plan   = RuntimeNativeWriter::plan(
+			$this->blocks_with_custom_attributes(),
+			$token,
+			array(
+				array(
+					'op'     => 'attribute',
+					'handle' => $handle,
+					'name'   => 'title',
+				),
+			),
+			$this->descriptors(),
+			array( 'desktop' )
+		);
+
+		$records = $plan['blocks'][0]['attrs']['module']['decoration']['attributes']['desktop']['value']['attributes'];
+
+		self::assertTrue( $plan['valid'] );
+		self::assertSame( 'unset', $plan['operations'][0]['op'] );
+		self::assertSame(
+			array(
+				array(
+					'name'          => 'data-existing',
+					'value'         => 'keep',
+					'targetElement' => '',
+				),
+			),
+			$records
+		);
+	}
+
 	public function test_schema_discovered_raw_native_path_can_be_written_without_authoring_mapping(): void {
 		$token  = str_repeat( 'b', 64 );
 		$handle = DocumentModel::snapshot_handle( $token, 0, 'divi/text' );
@@ -82,7 +176,7 @@ final class RuntimeNativeWriterTest extends TestCase {
 		self::assertSame( 'native_path_not_runtime_proven', $plan['errors'][0]['code'] );
 	}
 
-	public function test_responsive_writer_uses_discovered_breakpoint_not_hardcoded_device_list(): void {
+	public function test_responsive_writer_requires_discovered_breakpoint_value_path(): void {
 		$token  = str_repeat( 'd', 64 );
 		$handle = DocumentModel::snapshot_handle( $token, 0, 'divi/text' );
 		$plan   = RuntimeNativeWriter::plan(
@@ -105,7 +199,33 @@ final class RuntimeNativeWriterTest extends TestCase {
 		self::assertSame( 'Wide tablet copy', $plan['blocks'][0]['attrs']['content']['innerContent']['tabletWide']['value'] );
 	}
 
-	public function test_state_writer_uses_runtime_parameter_feature_evidence(): void {
+	public function test_responsive_writer_rejects_feature_without_exact_value_path(): void {
+		$token       = str_repeat( '5', 64 );
+		$handle      = DocumentModel::snapshot_handle( $token, 0, 'divi/text' );
+		$descriptors = $this->descriptors();
+		unset( $descriptors['divi/text']['parameter_graph'][0]['native_value_paths']['tabletWide'] );
+
+		$plan = RuntimeNativeWriter::plan(
+			$this->blocks(),
+			$token,
+			array(
+				array(
+					'op'         => 'responsive',
+					'handle'     => $handle,
+					'property'   => 'content.innerContent',
+					'breakpoint' => 'tabletWide',
+					'value'      => 'Unproven',
+				),
+			),
+			$descriptors,
+			array( 'desktop', 'tabletWide' )
+		);
+
+		self::assertFalse( $plan['valid'] );
+		self::assertSame( 'native_mapping_unavailable', $plan['errors'][0]['code'] );
+	}
+
+	public function test_state_writer_rejects_feature_only_evidence_without_native_mapping(): void {
 		$token  = str_repeat( 'e', 64 );
 		$handle = DocumentModel::snapshot_handle( $token, 0, 'divi/text' );
 		$plan   = RuntimeNativeWriter::plan(
@@ -121,6 +241,35 @@ final class RuntimeNativeWriterTest extends TestCase {
 				),
 			),
 			$this->descriptors(),
+			array( 'desktop' )
+		);
+
+		self::assertFalse( $plan['valid'] );
+		self::assertSame( 'native_mapping_unavailable', $plan['errors'][0]['code'] );
+	}
+
+	public function test_state_writer_accepts_explicit_runtime_proven_native_mapping(): void {
+		$token       = str_repeat( '6', 64 );
+		$handle      = DocumentModel::snapshot_handle( $token, 0, 'divi/text' );
+		$descriptors = $this->descriptors();
+		$descriptors['divi/text']['parameter_graph'][0]['native_state_paths'] = array(
+			'desktop' => array(
+				'hover' => 'content.innerContent.desktop.hover',
+			),
+		);
+		$plan = RuntimeNativeWriter::plan(
+			$this->blocks(),
+			$token,
+			array(
+				array(
+					'op'       => 'state',
+					'handle'   => $handle,
+					'property' => 'content.innerContent',
+					'state'    => 'hover',
+					'value'    => 'Hover copy',
+				),
+			),
+			$descriptors,
 			array( 'desktop' )
 		);
 
@@ -190,6 +339,25 @@ final class RuntimeNativeWriterTest extends TestCase {
 		);
 	}
 
+	/** @return array<int, array<string, mixed>> */
+	private function blocks_with_custom_attributes(): array {
+		$blocks = $this->blocks();
+		$blocks[0]['attrs']['module']['decoration']['attributes']['desktop']['value']['attributes'] = array(
+			array(
+				'name'          => 'data-existing',
+				'value'         => 'keep',
+				'targetElement' => '',
+			),
+			array(
+				'name'          => 'title',
+				'value'         => 'Original title',
+				'targetElement' => '',
+			),
+		);
+
+		return $blocks;
+	}
+
 	/** @return array<string, array<string, mixed>> */
 	private function descriptors(): array {
 		return array(
@@ -204,9 +372,15 @@ final class RuntimeNativeWriterTest extends TestCase {
 				),
 				'parameter_graph' => array(
 					array(
-						'semantic_path' => 'content.innerContent',
-						'runtime_hint'  => 'content.innerContent',
-						'native_path'   => 'content.innerContent',
+						'semantic_path'     => 'content.innerContent',
+						'runtime_hint'      => 'content.innerContent',
+						'native_path'       => 'content.innerContent',
+						'native_value_paths' => array(
+							'desktop'    => 'content.innerContent.desktop.value',
+							'tabletWide' => 'content.innerContent.tabletWide.value',
+							'tablet'     => 'content.innerContent.tablet.value',
+							'phone'      => 'content.innerContent.phone.value',
+						),
 						'type'          => 'text',
 						'hover'         => 'supported',
 						'sticky'        => 'unavailable',
