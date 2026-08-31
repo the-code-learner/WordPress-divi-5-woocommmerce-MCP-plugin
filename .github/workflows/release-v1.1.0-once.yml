@@ -1,0 +1,63 @@
+name: Publish v1.1.0 once
+
+on:
+  push:
+    branches:
+      - release/1.1.0
+    paths:
+      - '.github/workflows/release-v1.1.0-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact release commit
+        uses: actions/checkout@v4
+        with:
+          ref: 1c75f4db05d8320bbcc81b038573369a809ec76b
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Verify immutable release pin
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "1c75f4db05d8320bbcc81b038573369a809ec76b"
+          test "$(git rev-parse origin/main)" = "1c75f4db05d8320bbcc81b038573369a809ec76b"
+          if git ls-remote --exit-code --tags origin refs/tags/v1.1.0 >/dev/null 2>&1; then
+            echo "v1.1.0 already exists; refusing to move or replace it."
+            exit 1
+          fi
+          export TAG_VERSION="1.1.0"
+          composer run validate-version
+
+      - name: Install production dependencies
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+
+      - name: Build production ZIP
+        run: ./scripts/build-zip.sh
+
+      - name: Publish pinned stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          sha256sum build/mcp-bridge-for-divi-woocommerce.zip
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git tag -a v1.1.0 1c75f4db05d8320bbcc81b038573369a809ec76b -m "v1.1.0"
+          git push origin refs/tags/v1.1.0
+          gh release create v1.1.0 \
+            build/mcp-bridge-for-divi-woocommerce.zip \
+            --verify-tag \
+            --title "v1.1.0" \
+            --generate-notes \
+            --latest
