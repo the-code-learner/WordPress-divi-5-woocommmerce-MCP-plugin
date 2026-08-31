@@ -3,7 +3,7 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -14,9 +14,11 @@ Secure MCP access for WordPress with native Divi 5 authoring, OAuth, controlled 
 
 MCP Bridge for Divi 5 and WooCommerce builds on the WordPress Abilities API and the official WordPress MCP Adapter.
 
-Version 1.0.0 introduces the clean-break runtime/document foundation as the primary next-major Divi API. MCP clients can discover the active Divi runtime and module schemas, read a normalized snapshot-bound document AST, dry-run atomic semantic mutation batches, and persist validated draft mutations through `divi-runtime-describe`, `divi-module-describe`, `divi-document-get`, `divi-document-validate`, and `divi-document-mutate`. The v0.4.0 abilities remain available as compatibility shims rather than the primary architecture.
+Version 1.1.0 extends the clean-break runtime/document foundation with a generic Divi runtime bridge. MCP clients can discover runtime registries and schema fingerprints, dry-run or atomically persist runtime-proven native attribute paths, write responsive/state values from runtime metadata, apply module presets, map semantic Custom Attributes to Divi 5 native storage, and render/inspect the resulting server-side markup. Unknown systems remain explicitly `unknown` instead of being silently discarded or falsely marked unsupported.
 
-The clean-break authoring surface is deliberately conservative. Semantic/UI paths are kept separate from persisted native paths, and a parameter becomes writable only when the runtime proves both a concrete persisted value path and a validator-compatible value contract. Stale document tokens are rejected, structural edits use snapshot-scoped handles, complete batches are validated before one persistence write, and normal writes remain restricted to draft, pending, or auto-draft content. Raw-native mutation, state/preset application without proven mappings, publishing, render, and DOM/computed-style inspection are not claimed by this release.
+The generic native writer remains deliberately conservative. Writes require a fresh document token and editable draft/pending content; arbitrary nested paths are rejected unless they are proven by runtime parameter metadata or an explicit Divi adapter contract. Wrapper class/id and safe custom HTML attributes use Divi 5's Advanced HTML attribute storage, event-handler attributes are rejected, complete mutation batches are validated before one post-content write, and a revision is requested before persistence. Server-side render inspection exposes generated HTML, classes, IDs, inline CSS, warnings, and basic selector matches; browser computed styles and layout dimensions are still reported as unavailable.
+
+Version 1.0.0 introduced the clean-break runtime/document foundation as the primary next-major Divi API. MCP clients can discover the active Divi runtime and module schemas, read a normalized snapshot-bound document AST, dry-run atomic semantic mutation batches, and persist validated draft mutations through `divi-runtime-describe`, `divi-module-describe`, `divi-document-get`, `divi-document-validate`, and `divi-document-mutate`. The v0.4.0 abilities remain available as compatibility shims rather than the primary architecture.
 
 Version 0.4.0 adds low-level runtime-native insertion for any registered `divi/*` module. MCP clients can use live Divi schemas to insert validated nested module trees such as Accordion/Accordion Item, Tabs/Tab, Slider/Slide, Contact Form/Contact Field, Pricing Tables/Pricing Table, and other runtime-discovered relationships while preserving the exact native attribute object.
 
@@ -53,11 +55,16 @@ The plugin exposes these bridge abilities through the WordPress MCP Adapter gate
 * `divi5-woocommerce-mcp/get-status` - plugin, Divi, native Divi authoring, and WooCommerce status.
 * `divi5-woocommerce-mcp/get-update-status` - fresh stable GitHub release check.
 * `divi5-woocommerce-mcp/update-self` - update only this plugin to an exact discovered stable version.
-* `divi5-woocommerce-mcp/divi-runtime-describe` - describe the clean-break API generation, active Divi runtime, discovered modules/providers, and conservative capability status.
+* `divi5-woocommerce-mcp/divi-runtime-describe` - describe the clean-break API generation, active Divi runtime, discovered modules/providers, fingerprints, and conservative capability status.
+* `divi5-woocommerce-mcp/divi-runtime-list-registries` - list runtime-derived registries and their support/unknown evidence.
+* `divi5-woocommerce-mcp/divi-runtime-describe-registry` - inspect one discovered registry such as modules, field components, option groups, breakpoints, states, dynamic-content capability, providers, attribute roots, or layout engines.
 * `divi5-woocommerce-mcp/divi-module-describe` - inspect one runtime-discovered module, its full normalized parameter graph, mutation-safe parameter subset, and optional raw runtime schema.
 * `divi5-woocommerce-mcp/divi-document-get` - read a normalized Divi document snapshot with deterministic snapshot-scoped handles and an exact SHA-256 document token.
 * `divi5-woocommerce-mcp/divi-document-validate` - dry-run an atomic semantic mutation batch against one exact document snapshot without persistence.
 * `divi5-woocommerce-mcp/divi-document-mutate` - persist a fully validated semantic batch to editable draft/pending content with stale-token and runtime-schema guards.
+* `divi5-woocommerce-mcp/divi-document-native-validate` - dry-run generic runtime-proven native set/unset, responsive/state, module preset, and semantic Custom Attribute operations.
+* `divi5-woocommerce-mcp/divi-document-native-mutate` - atomically persist the same native mutation operations only on editable draft/pending content with a fresh snapshot token.
+* `divi5-woocommerce-mcp/divi-render` - render the document server-side and return HTML metadata, generated classes/IDs, inline CSS, warnings, and optional basic selector inspection.
 * `divi5-woocommerce-mcp/divi-get-layout` - inspect the native Divi 5 block tree and block paths (v0.4 compatibility shim).
 * `divi5-woocommerce-mcp/divi-save-layout` - replace draft content with a semantic layout saved as validated native Divi 5 blocks (v0.4 compatibility shim).
 * `divi5-woocommerce-mcp/divi-update-module` - patch one native Divi 5 block's attributes by the path returned from `divi-get-layout` (v0.4 compatibility shim).
@@ -83,13 +90,25 @@ The GitHub source checkout requires Composer and is not itself the production pa
 
 == Frequently Asked Questions ==
 
-= What is the primary Divi API in version 1.0.0? =
+= What is the primary Divi API in version 1.1.0? =
 
-Use the clean-break runtime/document abilities: `divi-runtime-describe`, `divi-module-describe`, `divi-document-get`, `divi-document-validate`, and `divi-document-mutate`. They negotiate capabilities from the active runtime and operate on a normalized document model. The older path-oriented abilities remain compatibility shims.
+Use the clean-break runtime/document abilities plus the generic runtime bridge: `divi-runtime-describe`, registry discovery, `divi-module-describe`, `divi-document-get`, semantic/native validate and mutate, and `divi-render`. They negotiate capabilities from the active runtime and keep unknown capability registries explicit. The older path-oriented abilities remain compatibility shims.
 
 = Why can a parameter appear in module introspection but not be writable? =
 
-The full parameter graph is intended for runtime introspection. A parameter is included in the mutation-facing list only when its persisted native value path and its value contract are both demonstrated by runtime evidence. The plugin does not synthesize storage paths from UI group names or permit unknown value types merely because a control exists.
+The full parameter graph is intended for runtime introspection. Semantic mutation requires a persisted native value path and a validator-compatible value contract. The generic native writer can additionally address a new nested field when its location is proven by runtime parameter metadata, but it still rejects arbitrary guessed native paths.
+
+= Does raw-native write mean arbitrary Divi JSON can be written? =
+
+No. Top-level attributes must exist in the registered WordPress block schema. Nested native locations must be proven by runtime parameter metadata or a narrowly defined Divi adapter contract. Writes require a current document token and are restricted to draft, pending, or auto-draft content.
+
+= Can MCP add CSS classes and custom attributes without relying on className? =
+
+Yes. Version 1.1.0 maps wrapper class/id and safe HTML attributes to Divi 5's Advanced HTML attribute storage instead of relying on the ambiguous top-level `className`. The render ability can then verify whether the resulting class/attribute reaches server-rendered markup.
+
+= Does divi-render provide browser computed styles? =
+
+No. It renders through WordPress/Divi server-side block callbacks and can inspect generated markup, classes, IDs, inline style blocks, warnings, and simple selectors. Browser layout, computed-style cascades, dimensions, and interactive state execution still require a browser-assisted inspector and are reported as unavailable.
 
 = Are pages created with the Divi abilities editable in the Visual Builder? =
 
@@ -125,13 +144,21 @@ Yes. `divi5-woocommerce-mcp/update-self` can update only this plugin, requires t
 
 = Is this plugin production ready? =
 
-Not as a broad autonomous publishing system. Version 1.0.0 is the next-major architecture milestone for conservative, draft-first Divi runtime/document authoring. Raw-native mutation, automatic publishing, state/preset writes without proven mappings, render, and DOM/computed-style inspection remain intentionally unavailable.
+Not as a broad autonomous publishing or complete Visual Builder replacement. Version 1.1.0 materially expands conservative draft-first Divi runtime authoring, but complete Design Variables/relative-colors CRUD, authoritative preset registries, complete Loop/interaction provider registries, Theme Builder/global systems, publishing, and browser computed-style inspection remain future work or explicitly unknown until the active runtime proves them.
 
 == Screenshots ==
 
 Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
+
+= 1.1.0 =
+* Add generic runtime registry discovery with module/schema/feature/breakpoint fingerprints and explicit unknown capability states.
+* Add snapshot-bound draft-only generic native validation/mutation for runtime-proven set/unset paths, responsive/state values, module presets, and semantic Divi Custom Attributes.
+* Map wrapper class/id and safe custom HTML attributes to Divi 5 Advanced HTML attribute storage; reject event-handler attributes and unproven nested paths.
+* Discover breakpoints dynamically from the active Divi runtime method contract with schema/default-value fallback instead of hardcoding device names.
+* Add server-side Divi render and basic markup inspection with generated classes, IDs, inline CSS, warnings, and explicit browser-computed-style unavailability.
+* Add regression coverage for future runtime-native fields, non-hardcoded breakpoints, hover state, presets, Custom Attributes, unsafe attributes, and MCP contracts.
 
 = 1.0.0 =
 * Add the clean-break runtime/document API with runtime describe, module describe, document get, document validate, and document mutate abilities.
@@ -140,7 +167,7 @@ Screenshots will be added after the preview/admin UI is implemented.
 * Keep semantic/UI paths distinct from persisted native paths; expose mutation only for runtime-proven path and value contracts.
 * Add runtime-normalized responsive values and conservative capability negotiation with supported/unknown/unavailable states.
 * Preserve draft/pending/auto-draft gates, hierarchy validation, revisions, one-write persistence, and machine-readable errors.
-* Keep v0.4.0 abilities as compatibility shims; raw-native write, publish, state/preset mappings, render, and DOM/computed-style inspection remain unavailable.
+* Keep v0.4.0 abilities as compatibility shims.
 
 = 0.4.0 =
 * Add `divi-insert-native-module` for runtime-registered native `divi/*` modules.

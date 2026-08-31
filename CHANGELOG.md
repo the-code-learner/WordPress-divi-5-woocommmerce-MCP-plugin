@@ -14,6 +14,30 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Runtime-proven state/preset write mappings.
 - Revision-aware publish gate and persistent audit logging.
 
+## [1.1.0] - 2026-08-31
+
+### Added
+
+- Generic Divi runtime registry discovery for modules, providers, field components, option groups, breakpoints, states, dynamic-content capability, attribute roots, and layout engines, with schema/feature fingerprints and explicit unknown states.
+- Runtime-proven native document validation and mutation abilities for safe native set/unset operations, responsive/state values, semantic module-wrapper Custom Attributes, and module preset assignment when runtime evidence proves the mapping.
+- Server-side Divi rendering and lightweight selector inspection with generated classes, IDs, inline CSS, markup warnings, and explicit reporting that browser computed styles remain unavailable.
+
+### Security
+
+- Native writes require editable draft/pending content and a fresh document snapshot token; stale tokens are rejected.
+- Arbitrary nested native paths are rejected unless runtime metadata or an explicit Divi adapter contract proves them.
+- Event-handler Custom Attributes such as `onclick` are rejected, and complete native mutation batches are validated before persistence.
+- Unknown registries, state mappings, preset IDs, and other runtime systems remain unknown instead of being synthesized or hard-coded.
+
+### Changed
+
+- Negotiated runtime descriptor API is now `1.1.0-alpha.1` and reports registry discovery, raw-native writing, state editing, preset application, rendering, and partial inspection capabilities conservatively from the active Divi runtime.
+- Bumped plugin, package, and WordPress stable release metadata to `1.1.0`.
+
+### Tests
+
+- Added regression coverage for semantic Custom Attribute class mapping, safe generic HTML attributes, event-handler rejection, runtime-proven responsive breakpoints including non-hardcoded names, hover state mapping, preset assignment, stale/unproven native paths, and render inspection.
+
 ## [1.0.0] - 2026-08-31
 
 ### Added
