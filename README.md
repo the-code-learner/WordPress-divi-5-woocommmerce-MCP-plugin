@@ -1,190 +1,225 @@
 # MCP Bridge for Divi 5 and WooCommerce
 
-A WordPress plugin project for exposing controlled WordPress, Divi 5, WooCommerce, preview, and publishing capabilities to MCP clients.
+A WordPress plugin that exposes controlled WordPress and Divi 5 capabilities to MCP clients through the WordPress Abilities API and the official `wordpress/mcp-adapter` bridge.
 
-> **Status:** early foundation (`0.1.2`). The repository includes the MCP bootstrap, GitHub release updater, privacy-preserving pre-WordPress.org telemetry/error reporting, CI, release checks, and WordPress.org deployment guardrails. This is not yet a production-ready Divi automation engine.
+The primary Divi surface is the **clean-break Runtime + Document API**: runtime-driven discovery, normalized document reads, dry-run validation, atomic semantic/native mutation, server-side render inspection, and an optional real-pixel screenshot ability.
+
+> **Plugin version:** `1.2.0`  
+> **Clean-break API generation:** `clean-break-1`  
+> **Clean-break API version:** `1.2.0-alpha.1`  
+> **Primary API:** `clean-break-runtime-document+generic-runtime-bridge`
 
 ## Requirements
 
-- WordPress **6.9+** (the Abilities API is part of core from 6.9).
+- WordPress **6.9+** because the plugin uses the core Abilities API.
 - PHP **7.4+**.
-- Divi 5 is detected at runtime; it is not bundled.
+- Divi 5 for Divi runtime discovery and native authoring. Divi is detected at runtime and is not bundled.
 - WooCommerce is optional and detected at runtime; it is not bundled.
-- Composer is required to build a distributable package because the official WordPress MCP Adapter and its dependencies are vendored into the release ZIP.
+- Composer is required for development builds. Production release ZIPs include the required PHP dependencies.
 
-## Architecture
+## Installation
 
-The plugin is designed to be self-contained for its core MCP functionality and future WordPress.org distribution:
-
-- PHP + WordPress APIs on the server.
-- The WordPress Abilities API as the capability registry.
-- The official `wordpress/mcp-adapter` package as the MCP bridge.
-- Jetpack Autoloader to reduce dependency-version conflicts with other plugins.
-- Browser-side JavaScript/CSS for future preview and DOM/CSS inspection features.
-- No required Playwright, Puppeteer, Chromium, Node daemon, Docker service, or external SaaS service for MCP operation.
-- A temporary Cloudflare Workers telemetry receiver for pre-WordPress.org usage/error reporting; both client features can be disabled independently.
-
-Current source layout:
+Install the production asset from a tagged GitHub Release:
 
 ```text
-src/
-  Admin/
-  Audit/
-  Divi/
-  MCP/
-  Preview/
-  Security/
-  Telemetry/
-  Updates/
-  WooCommerce/
-  WordPress/
-assets/
-  css/
-  js/
-languages/
-tests/
-scripts/
-.github/workflows/
+mcp-bridge-for-divi-woocommerce.zip
 ```
 
-The current implementation exposes a read-only status Ability so the project has a real integration seam while keeping Divi-specific write behavior out of the foundation releases.
+Upload it through **Plugins > Add New > Upload Plugin** in WordPress, install, and activate it.
 
-## Telemetry and privacy during GitHub distribution
+For a development checkout:
 
-Version `0.1.2` introduces two settings under **Settings > MCP Bridge** that are separate from the GitHub updater:
+```bash
+composer install
+```
 
-- Usage telemetry — enabled by default during the temporary pre-WordPress.org GitHub distribution, with opt-out.
-- Automatic error reporting — enabled by default during the temporary pre-WordPress.org GitHub distribution, with opt-out.
+A source checkout is not the distributable package. Production builds are created by `scripts/build-zip.sh` after installing the locked production dependencies.
 
-Usage telemetry sends only a random local installation ID, plugin version, WordPress version, PHP major/minor version, and Divi/WooCommerce detection booleans. The first heartbeat is delayed by at least one day and later heartbeats are scheduled approximately weekly with bounded jitter.
+## MCP endpoint and OAuth
 
-Automatic reporting is restricted to fatal errors originating inside this plugin. Client-side sanitization removes URLs, email addresses, absolute paths, query fragments, and common token/password/authorization/cookie patterns. Stack information is limited to plugin-owned relative paths and at most ten frames.
+The OAuth MCP endpoint is:
 
-The client payload allowlists do not include site/home URL, domain, administrator email, usernames/user IDs, post/page/product/order/customer content, database values, cookies, request bodies, tokens/secrets, or arbitrary plugin/theme lists. HTTP sends use a short timeout and `blocking=false` so receiver failures do not block WordPress requests.
+```text
+/wp-json/mcp/mcp-oauth-server
+```
 
-**WordPress.org handoff requirement:** before submission, both telemetry controls must be changed to disabled-by-default explicit opt-in and the privacy/readme disclosure must be reviewed against the current Plugin Directory requirements.
+OAuth uses Authorization Code with PKCE S256, bearer access tokens, rotating refresh tokens, revocation, issuer/resource binding, and protected-resource discovery. OAuth is enabled only when the canonical WordPress Site Address uses HTTPS.
 
-## Security model
+WordPress usernames, Application Passwords, bearer tokens, refresh tokens, authorization codes, and other credentials must not be embedded in MCP server URLs.
 
-The project is intended to enforce least privilege at every Ability through WordPress capability checks and explicit `permission_callback` functions. Planned MCP scopes are:
+## Current abilities
 
-- `wordpress:read`
-- `wordpress:write`
-- `divi:read`
-- `divi:write`
-- `woocommerce:read`
-- `woocommerce:write`
-- `preview:read`
-- `publish`
+### Status and updates
 
-The target authentication model is OAuth 2.1 Authorization Code + PKCE, with WordPress Application Passwords retained only as an advanced fallback where appropriate. Publish operations are intentionally separated from editing operations and are expected to require an explicit publish gate, revision creation, and audit logging.
+- `divi5-woocommerce-mcp/get-status`
+- `divi5-woocommerce-mcp/get-update-status`
+- `divi5-woocommerce-mcp/update-self`
 
-## Preview model
+The self-update path is restricted to this plugin and the stable GitHub release channel. `update-self` requires the WordPress `update_plugins` capability and an exact expected version.
 
-Preview is expected to use real WordPress rendering in a browser context. Responsive controls and a DOM/CSS inspector will live in the plugin UI. The project explicitly does **not** require a headless browser renderer at runtime.
+### Runtime and registry discovery
 
-## Roadmap
+- `divi5-woocommerce-mcp/divi-runtime-describe`
+- `divi5-woocommerce-mcp/divi-runtime-list-registries`
+- `divi5-woocommerce-mcp/divi-runtime-describe-registry`
+- `divi5-woocommerce-mcp/divi-module-describe`
 
-### Foundation
+Runtime capabilities are derived from the active Divi installation. Unknown systems remain `unknown`; the plugin does not infer support merely from product or field names.
 
-- [x] SemVer bootstrap at `0.1.0`.
-- [x] WordPress 6.9+ / PHP 7.4+ baseline.
-- [x] Official MCP Adapter dependency.
-- [x] Divi and WooCommerce runtime detection.
-- [x] Read-only status Ability.
-- [x] CI, distributable ZIP workflow, and WordPress.org deployment guardrails.
-- [x] Temporary GitHub release updater.
-- [x] Pre-WordPress.org telemetry/error-reporting client and private receiver.
-- [ ] Confirm final WordPress.org slug and contributor username before submission.
-- [ ] Switch telemetry/error reporting to explicit opt-in before WordPress.org submission.
+### Snapshot-bound document authoring
 
-### WordPress abilities
+- `divi5-woocommerce-mcp/divi-document-get`
+- `divi5-woocommerce-mcp/divi-document-validate`
+- `divi5-woocommerce-mcp/divi-document-mutate`
+- `divi5-woocommerce-mcp/divi-document-native-validate`
+- `divi5-woocommerce-mcp/divi-document-native-mutate`
 
-- [ ] Posts/pages CRUD, drafts, revisions, and media.
-- [ ] Capability map for read/write/publish operations.
-- [ ] Audit log for MCP-triggered mutations.
+Document reads return a SHA-256 `document_token` for optimistic concurrency. Validation and mutation are bound to that exact snapshot. Stale tokens are rejected instead of applying a plan to changed content.
 
-### Divi 5
+Writes are intentionally conservative:
 
-- [ ] Structure and module discovery.
-- [ ] Semantic module editing.
-- [ ] Design properties and responsive overrides.
-- [ ] Design variables, presets, and breakpoints.
-- [ ] Theme Builder support after the relevant APIs are stable and verified.
+- normal Divi mutation is limited to `draft`, `pending`, or `auto-draft` content;
+- complete batches are validated before one persistence operation;
+- arbitrary nested native paths are rejected unless runtime metadata or a narrow Divi adapter contract proves the location;
+- responsive writes require an exact runtime-discovered persisted path for the requested breakpoint;
+- state writes require an explicit runtime-proven native state path;
+- unsafe event-handler Custom Attributes are rejected;
+- wrapper class/id and safe Custom Attributes use verified Divi 5 native storage.
 
-### WooCommerce
+### Server-side render inspection
 
-- [ ] Optional product/catalog reads.
-- [ ] Permission-gated product mutations.
-- [ ] Order/customer operations only after privacy and capability review.
+- `divi5-woocommerce-mcp/divi-render`
 
-### Preview and QA
+`divi-render` executes WordPress/Divi server-side block rendering and can report markup, classes, IDs, inline CSS, warnings, and basic selector matches. It does **not** claim to provide browser layout, computed-style cascades, dimensions, or interactive-state execution.
 
-- [ ] WordPress-rendered preview endpoint/UI.
-- [ ] Responsive preview controls.
-- [ ] Browser-side DOM/CSS inspector.
-- [ ] Publish gate with revision comparison.
+### Real-pixel screenshot ability
 
-## Development
+- `divi5-woocommerce-mcp/divi-screenshot`
+
+Version 1.2.0 adds a read-only visual capture contract for real frontend pixels at arbitrary viewport widths from 240 through 4096 px.
+
+The plugin deliberately does **not** reconstruct a screenshot from `do_blocks()`, DOM parsing, GD, Imagick, PDF layout, or other server-side approximations. It also does not bundle Playwright, Puppeteer, Node.js, Chromium, JavaScript browser automation, or a screenshot SaaS.
+
+A successful capture requires the hosting environment or a separate integration to provide a compatible `ScreenshotEngineInterface` through the `divi5_woocommerce_mcp_screenshot_engine` filter. When no real raster engine is available, the ability fails explicitly with:
+
+```text
+render_engine_unavailable
+```
+
+The caller cannot supply an arbitrary URL. The plugin derives the target from `post_id`, requires the target host/port to match the current WordPress site, signs non-public preview access with a short-lived HMAC bound to the post, user, target, and expiry, and validates returned PNG/JPEG bytes, dimensions, format, requested width, total pixels, byte size, and time limits.
+
+See [`docs/divi-screenshot.md`](docs/divi-screenshot.md) for the renderer contract, limits, preview authorization, SSRF protections, and MCP image transport.
+
+### Legacy compatibility abilities
+
+The earlier v0.4 path-oriented abilities remain available as compatibility shims, including layout inspection, constrained save/update, module discovery/schema inspection, native insertion, delete, move, and duplicate operations. New integrations should prefer the clean-break runtime/document surface.
+
+## Dependency integrity and reproducible builds
+
+`composer.lock` is committed and is the authoritative dependency graph for CI and releases. Normal CI and production builds use `composer install`; they do not float dependencies with `composer update`.
+
+The dedicated **Dependency Integrity** check:
+
+1. requires `composer.lock`;
+2. runs `composer validate --strict`;
+3. installs the locked dependency graph;
+4. verifies `wp-media/mcp-oauth` provenance and installed revision against the lock;
+5. runs `composer audit --locked`;
+6. verifies installation did not mutate the lock.
+
+The OAuth integrity validator has no independent hard-coded expected commit. It verifies that the lock points to the trusted `wp-media/mcp-oauth` Git repository and that Composer installed exactly the revision recorded in the lock.
+
+Pull requests also run GitHub **Dependency Review** with `fail-on-severity: high`.
+
+An intentional dependency update therefore requires an explicit lock update in a reviewed commit; a moving development branch cannot silently change the dependency installed by CI or a release build.
+
+## Build and CI
+
+The main quality workflow covers:
+
+- deterministic Composer installation;
+- version consistency;
+- PHP syntax;
+- WordPress Coding Standards;
+- PHPUnit;
+- production dependency installation;
+- distributable ZIP build and content verification;
+- WordPress Plugin Check;
+- distributable artifact upload.
+
+Run the core checks locally with:
 
 ```bash
 composer install
 composer validate --strict
+composer run validate-oauth-dependency
+composer audit --locked
+composer run validate-version
+composer run lint:syntax
 composer run lint
 composer run test
-composer run validate-version
 ```
 
-The development checkout is not the WordPress.org package. Production builds must run Composer with `--no-dev` and include `vendor/`.
+Build the production ZIP with:
 
-## Build
+```bash
+./scripts/build-zip.sh
+```
 
-CI and release jobs run `scripts/build-zip.sh`. The script stages a production package with `rsync`, applies `.distignore` as the exclusion source, and creates:
+The resulting asset is:
 
 ```text
 build/mcp-bridge-for-divi-woocommerce.zip
 ```
 
-Development-only files such as `.github/`, `tests/`, `scripts/`, local tooling configuration, `vendor/bin/`, and dependency caches are excluded from the distributable. The WordPress.org deployment action also honors `.distignore`, so the GitHub ZIP and SVN deployment share the same distribution boundary.
+Development-only files such as `.github/`, tests, scripts, local tooling configuration, dependency caches, and `node_modules` are excluded from the distributable.
 
-## Versioning and release
+## Release process
 
-This project uses SemVer (`MAJOR.MINOR.PATCH`). Version `0.1.2` is centralized in `src/Version.php` and is checked against the plugin header and `readme.txt` stable tag.
+The project uses Semantic Versioning (`MAJOR.MINOR.PATCH`). The plugin version is centralized in `src/Version.php` and checked against the main plugin header and `readme.txt` stable tag. Tagged release validation additionally requires the Git tag version to match those files.
 
 Release flow:
 
-1. Feature branch.
-2. Pull request.
-3. CI and Plugin Check.
-4. Merge to `main`.
-5. Bump version and changelog.
-6. Tag `vX.Y.Z`.
-7. Build and publish the GitHub Release ZIP.
-8. After WordPress.org approval, approve the `wordpress-production` GitHub Environment.
-9. Deploy the same version to WordPress.org SVN `trunk` and `tags/X.Y.Z`.
+1. Feature pull request passes `PHP, tests, build, Plugin Check`, `Dependency Integrity`, and `Dependency Review`.
+2. Feature is merged to `main`.
+3. A release branch updates version metadata and public documentation.
+4. The release pull request passes the same checks.
+5. The release branch is merged to `main`.
+6. Tag `vX.Y.Z` is created on the exact release commit.
+7. The tag workflow validates the version, installs production dependencies from `composer.lock`, builds the ZIP, and publishes the GitHub Release.
 
-The WordPress.org deploy job is disabled unless repository variable `WORDPRESS_ORG_DEPLOY_ENABLED` is set to `true`. This prevents accidental SVN deployment before the plugin has been approved and an SVN repository exists.
+Release tags should be protected against deletion and movement.
 
-## First WordPress.org submission
+## Architecture and safety boundaries
 
-Before enabling deployment:
+The plugin is self-contained for its core MCP operation:
 
-1. Create and verify a WordPress.org account.
-2. Replace the contributor placeholder in `readme.txt` with the exact public WordPress.org username.
-3. Remove the temporary GitHub updater, external Update URI, and updater dependency from the WordPress.org package path.
-4. Change usage telemetry and automatic error reporting to disabled-by-default explicit opt-in.
-5. Re-review telemetry privacy disclosure and endpoint behavior against current Plugin Directory requirements.
-6. Keep `Tested up to` aligned with the WordPress version exercised by CI and real compatibility testing.
-7. Build the production ZIP and run Plugin Check/readme validation.
-8. Submit the ZIP through the WordPress.org Plugin Developer submission flow.
-9. Address review feedback.
-10. After approval and SVN assignment, configure GitHub secrets `SVN_USERNAME` and `SVN_PASSWORD`.
-11. Set repository variable `WORDPRESS_ORG_SLUG` to the assigned slug.
-12. Set `WORDPRESS_ORG_DEPLOY_ENABLED=true`.
-13. Configure GitHub Environment `wordpress-production` with a required reviewer/manual approval before the first deploy.
+- PHP + WordPress APIs on the server;
+- WordPress Abilities API as the capability registry;
+- official `wordpress/mcp-adapter` package as the MCP bridge;
+- Jetpack Autoloader to reduce dependency-version conflicts;
+- runtime-derived Divi module and registry introspection rather than a static vendor catalog;
+- WordPress block parsing/serialization for normalized reads and atomic persistence.
 
-The provisional distribution slug is `mcp-bridge-for-divi-woocommerce`; the authoritative WordPress.org slug remains whatever the directory assigns at approval time.
+The plugin is not a generic SQL console, arbitrary PHP executor, arbitrary filesystem writer, generic URL fetcher, or unrestricted publishing surface. Publishing remains separate from draft editing.
+
+Version 1.2.0 is not presented as a complete Visual Builder replacement. Design-variable/relative-color CRUD, complete authoritative state/preset/provider registries, Theme Builder/global systems, publish workflows, and browser computed-style inspection remain future work or runtime-dependent capabilities.
+
+## Telemetry and WordPress.org handoff
+
+During the temporary GitHub-distribution phase, usage telemetry and automatic fatal-error reporting are separate administrator settings under **Settings > MCP Bridge** and can be disabled independently.
+
+Before WordPress.org submission, the repository still requires the documented handoff work: telemetry/error reporting must be reviewed and changed to explicit opt-in as required by current directory policy, the final WordPress.org slug/contributor must be set, and the temporary GitHub updater/Update URI must be removed from the WordPress.org package path.
+
+The WordPress.org deployment workflow remains guarded and disabled unless the repository is explicitly configured after approval.
+
+## Documentation
+
+- [`docs/clean-break-runtime-document-foundation.md`](docs/clean-break-runtime-document-foundation.md) — clean-break runtime/document architecture.
+- [`docs/divi-screenshot.md`](docs/divi-screenshot.md) — real-pixel screenshot renderer contract and security model.
+- [`CHANGELOG.md`](CHANGELOG.md) — release history.
+- [`SECURITY.md`](SECURITY.md) — security policy and reporting.
 
 ## License
 
-GPL-2.0-or-later. WordPress.org requires GPL-compatible licensing, so the distributed plugin code cannot carry a non-commercial restriction. Commercial protection, if needed, should be handled outside the WordPress.org code license (for example through trademarks or optional services) without restricting the GPL-covered plugin.
+GPL-2.0-or-later.
