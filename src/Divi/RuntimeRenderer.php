@@ -30,18 +30,6 @@ final class RuntimeRenderer {
 		$warnings = array();
 		$html     = '';
 
-		set_error_handler(
-			static function ( int $severity, string $message, string $file, int $line ) use ( &$warnings ): bool {
-				$warnings[] = array(
-					'severity' => $severity,
-					'message'  => $message,
-					'file'     => basename( $file ),
-					'line'     => $line,
-				);
-				return true;
-			}
-		);
-
 		try {
 			if ( function_exists( 'do_blocks' ) ) {
 				$html = (string) do_blocks( $content );
@@ -57,8 +45,6 @@ final class RuntimeRenderer {
 				'file'     => basename( $throwable->getFile() ),
 				'line'     => $throwable->getLine(),
 			);
-		} finally {
-			restore_error_handler();
 		}
 
 		$classes    = self::extract_classes( $html );
@@ -139,10 +125,10 @@ final class RuntimeRenderer {
 				}
 				$attributes = array();
 				foreach ( $node->attributes as $attribute ) {
-					$attributes[ $attribute->nodeName ] = $attribute->nodeValue;
+					$attributes[ $attribute->name ] = $attribute->value;
 				}
 				$matches[] = array(
-					'tag'        => $node->tagName,
+					'tag'        => strtolower( $node->tagName ), // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM API property.
 					'attributes' => $attributes,
 					'outer_html' => (string) $dom->saveHTML( $node ),
 				);
