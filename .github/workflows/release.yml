@@ -24,6 +24,9 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      - name: Require Composer lock
+        run: test -f composer.lock
+
       - name: Install production dependencies
         run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
 
@@ -91,6 +94,9 @@ jobs:
           php-version: '7.4'
           coverage: none
           tools: composer:v2
+
+      - name: Require Composer lock
+        run: test -f composer.lock
 
       - name: Install production dependencies
         run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
