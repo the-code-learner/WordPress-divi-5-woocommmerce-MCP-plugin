@@ -83,6 +83,56 @@ final class RuntimeBridgeAbilities {
 		);
 
 		wp_register_ability(
+			'divi5-woocommerce-mcp/divi-screenshot',
+			array(
+				'label'               => __( 'Capture Divi page screenshot', 'mcp-bridge-for-divi-woocommerce' ),
+				'description'         => __( 'Captures real frontend pixels for a WordPress/Divi page at an arbitrary viewport width through a compatible backend raster renderer. It never approximates CSS layout from server-side markup and returns render_engine_unavailable when no real renderer is available.', 'mcp-bridge-for-divi-woocommerce' ),
+				'category'            => self::CATEGORY,
+				'execute_callback'    => array( self::class, 'screenshot' ),
+				'permission_callback' => array( self::class, 'can_read_document' ),
+				'input_schema'        => array(
+					'type'                 => 'object',
+					'required'             => array( 'post_id', 'width' ),
+					'additionalProperties' => false,
+					'properties'           => array(
+						'post_id'   => array(
+							'type'    => 'integer',
+							'minimum' => 1,
+						),
+						'width'     => array(
+							'type'    => 'integer',
+							'minimum' => 240,
+							'maximum' => 4096,
+						),
+						'full_page' => array(
+							'type'    => 'boolean',
+							'default' => true,
+						),
+						'height'    => array(
+							'type'    => array( 'integer', 'null' ),
+							'minimum' => 100,
+							'maximum' => 8192,
+							'default' => null,
+						),
+						'format'    => array(
+							'type'    => 'string',
+							'enum'    => array( 'png', 'jpeg' ),
+							'default' => 'png',
+						),
+						'quality'   => array(
+							'type'    => array( 'integer', 'null' ),
+							'minimum' => 1,
+							'maximum' => 100,
+							'default' => null,
+						),
+					),
+				),
+				'output_schema'       => self::generic_output_schema(),
+				'meta'                => self::mcp_meta( true, false, true ),
+			)
+		);
+
+		wp_register_ability(
 			'divi5-woocommerce-mcp/divi-render',
 			array(
 				'label'               => __( 'Render and inspect Divi document', 'mcp-bridge-for-divi-woocommerce' ),
@@ -145,6 +195,21 @@ final class RuntimeBridgeAbilities {
 	 */
 	public static function native_mutate( array $input ): array {
 		return RuntimeNativeWriter::mutate( (int) $input['post_id'], (string) $input['document_token'], (array) $input['operations'] );
+	}
+
+	/**
+	 * @param array<string, mixed> $input Input.
+	 * @return array<string, mixed>
+	 */
+	public static function screenshot( array $input ): array {
+		return ScreenshotRenderer::render(
+			(int) $input['post_id'],
+			(int) $input['width'],
+			! isset( $input['full_page'] ) || true === $input['full_page'],
+			isset( $input['height'] ) && is_int( $input['height'] ) ? $input['height'] : null,
+			isset( $input['format'] ) && is_string( $input['format'] ) ? $input['format'] : 'png',
+			isset( $input['quality'] ) && is_int( $input['quality'] ) ? $input['quality'] : null
+		);
 	}
 
 	/**
