@@ -11,7 +11,7 @@ namespace CodeLearner\Divi5WooCommerceMCP\Divi;
 
 final class RuntimeNativeWriter {
 	private const CUSTOM_CLASS_ID_PATH  = 'module.advanced.htmlAttributes';
-	private const CUSTOM_ATTRIBUTE_PATH = 'module.advanced.attributes';
+	private const CUSTOM_ATTRIBUTE_PATH = 'module.decoration.attributes';
 	private const MODULE_PRESET_PATH    = 'module.meta.modulePreset';
 
 	/**
@@ -185,12 +185,14 @@ final class RuntimeNativeWriter {
 			return $resolved;
 		}
 
-		$descriptor       = $resolved['descriptor'];
-		$block            = $resolved['block'];
-		$native_path      = '';
-		$value            = null;
-		$parameter        = null;
-		$validation_level = 'runtime-path-evidence';
+		$descriptor               = $resolved['descriptor'];
+		$block                    = $resolved['block'];
+		$native_path              = '';
+		$value                    = null;
+		$parameter                = null;
+		$validation_level         = 'runtime-path-evidence';
+		$generic_attribute_name   = null;
+		$generic_attribute_target = '';
 
 		switch ( $op ) {
 			case 'set':
@@ -221,8 +223,13 @@ final class RuntimeNativeWriter {
 				if ( isset( $breakpoint['error'] ) ) {
 					return self::error_result( 'breakpoint_unavailable', $index, $handle, 'breakpoint', $breakpoint['value'], $breakpoints, 'The requested breakpoint is not exposed by the active Divi runtime.' );
 				}
-				$base_path   = in_array( $name, array( 'class', 'id' ), true ) ? self::CUSTOM_CLASS_ID_PATH : self::CUSTOM_ATTRIBUTE_PATH;
-				$native_path = $base_path . '.' . $breakpoint['value'] . '.value.' . $name;
+				if ( in_array( $name, array( 'class', 'id' ), true ) ) {
+					$native_path = self::CUSTOM_CLASS_ID_PATH . '.' . $breakpoint['value'] . '.value.' . $name;
+				} else {
+					$native_path              = self::CUSTOM_ATTRIBUTE_PATH . '.' . $breakpoint['value'] . '.value.attributes';
+					$generic_attribute_name   = $name;
+					$generic_attribute_target = '';
+				}
 				if ( array_key_exists( 'value', $operation ) ) {
 					$value = $operation['value'];
 					if ( ! is_string( $value ) ) {
@@ -247,12 +254,11 @@ final class RuntimeNativeWriter {
 				if ( isset( $breakpoint['error'] ) ) {
 					return self::error_result( 'breakpoint_unavailable', $index, $handle, 'breakpoint', $breakpoint['value'], $breakpoints, 'The requested breakpoint is not exposed by the active Divi runtime.' );
 				}
-				$base = self::parameter_base_path( $parameter );
-				if ( '' === $base ) {
-					return self::error_result( 'native_mapping_unavailable', $index, $handle, $property, null, 'runtime native path or runtime hint', 'The runtime parameter does not expose enough path evidence for responsive authoring.' );
+				$native_path = self::parameter_value_path( $parameter, $breakpoint['value'] );
+				if ( '' === $native_path ) {
+					return self::error_result( 'native_mapping_unavailable', $index, $handle, $property, null, 'exact native_value_paths entry for the requested breakpoint', 'The runtime parameter does not expose an exact writable value path for this responsive breakpoint.' );
 				}
-				$native_path = $base . '.' . $breakpoint['value'] . '.value';
-				$value       = $operation['value'];
+				$value = $operation['value'];
 				break;
 
 			case 'state':
@@ -272,12 +278,11 @@ final class RuntimeNativeWriter {
 				if ( isset( $breakpoint['error'] ) ) {
 					return self::error_result( 'breakpoint_unavailable', $index, $handle, 'breakpoint', $breakpoint['value'], $breakpoints, 'The requested breakpoint is not exposed by the active Divi runtime.' );
 				}
-				$base = self::parameter_base_path( $parameter );
-				if ( '' === $base ) {
-					return self::error_result( 'native_mapping_unavailable', $index, $handle, $property, null, 'runtime native path or runtime hint', 'The runtime parameter does not expose enough path evidence for state authoring.' );
+				$native_path = self::parameter_state_value_path( $parameter, $breakpoint['value'], $state );
+				if ( '' === $native_path ) {
+					return self::error_result( 'native_mapping_unavailable', $index, $handle, $property, null, 'runtime-proven native_state_paths entry for the requested breakpoint/state', 'State feature metadata alone is not enough to prove a writable native state path.' );
 				}
-				$native_path = $base . '.' . $breakpoint['value'] . '.' . $state;
-				$value       = $operation['value'];
+				$value = $operation['value'];
 				break;
 
 			case 'preset':
@@ -306,8 +311,19 @@ final class RuntimeNativeWriter {
 			}
 		}
 
-		$attrs          = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
-		$attrs          = 'unset' === $op ? self::unset_path_value( $attrs, $native_path ) : self::set_path_value( $attrs, $native_path, $value );
+		$attrs = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
+		if ( null !== $generic_attribute_name ) {
+			$attrs = self::mutate_custom_attribute_records(
+				$attrs,
+				$native_path,
+				$generic_attribute_name,
+				$generic_attribute_target,
+				is_string( $value ) ? $value : '',
+				'unset' === $op
+			);
+		} else {
+			$attrs = 'unset' === $op ? self::unset_path_value( $attrs, $native_path ) : self::set_path_value( $attrs, $native_path, $value );
+		}
 		$block['attrs'] = $attrs;
 		$blocks         = self::replace_block( $blocks, $resolved['path'], $block );
 
@@ -338,15 +354,37 @@ final class RuntimeNativeWriter {
 	}
 
 	/**
+	 * Return only a runtime-proven value path for the requested breakpoint.
+	 *
 	 * @param array<string, mixed> $parameter Parameter.
 	 */
-	private static function parameter_base_path( array $parameter ): string {
-		foreach ( array( 'native_path', 'runtime_hint', 'semantic_path' ) as $field ) {
-			if ( isset( $parameter[ $field ] ) && is_string( $parameter[ $field ] ) && self::valid_native_path( $parameter[ $field ] ) ) {
-				return $parameter[ $field ];
-			}
+	private static function parameter_value_path( array $parameter, string $breakpoint ): string {
+		$paths = isset( $parameter['native_value_paths'] ) && is_array( $parameter['native_value_paths'] )
+			? $parameter['native_value_paths']
+			: array();
+		$path = isset( $paths[ $breakpoint ] ) && is_string( $paths[ $breakpoint ] ) ? $paths[ $breakpoint ] : '';
+
+		return self::valid_native_path( $path ) ? $path : '';
+	}
+
+	/**
+	 * Return only an explicitly discovered native state path.
+	 *
+	 * @param array<string, mixed> $parameter Parameter.
+	 */
+	private static function parameter_state_value_path( array $parameter, string $breakpoint, string $state ): string {
+		$paths = isset( $parameter['native_state_paths'] ) && is_array( $parameter['native_state_paths'] )
+			? $parameter['native_state_paths']
+			: array();
+		$path = '';
+
+		if ( isset( $paths[ $breakpoint ] ) && is_array( $paths[ $breakpoint ] ) && isset( $paths[ $breakpoint ][ $state ] ) && is_string( $paths[ $breakpoint ][ $state ] ) ) {
+			$path = $paths[ $breakpoint ][ $state ];
+		} elseif ( isset( $paths[ $breakpoint . ':' . $state ] ) && is_string( $paths[ $breakpoint . ':' . $state ] ) ) {
+			$path = $paths[ $breakpoint . ':' . $state ];
 		}
-		return '';
+
+		return self::valid_native_path( $path ) ? $path : '';
 	}
 
 	/**
@@ -447,6 +485,9 @@ final class RuntimeNativeWriter {
 					}
 				}
 			}
+			if ( isset( $parameter['native_state_paths'] ) && is_array( $parameter['native_state_paths'] ) ) {
+				self::collect_string_paths( $parameter['native_state_paths'], $candidates );
+			}
 
 			foreach ( array_unique( $candidates ) as $candidate ) {
 				if ( $path === $candidate || 0 === strpos( $path, $candidate . '.' ) || 0 === strpos( $candidate, $path . '.' ) ) {
@@ -459,6 +500,20 @@ final class RuntimeNativeWriter {
 			'error'    => 'The path is beneath a declared object attribute, but no runtime parameter path proves this nested location. Discover the module schema first; do not guess paths.',
 			'expected' => 'native_path/runtime_hint/native_value_path exposed by divi-module-describe',
 		);
+	}
+
+	/**
+	 * @param array<string, mixed> $source Source paths.
+	 * @param array<int, string>   $paths Collected paths.
+	 */
+	private static function collect_string_paths( array $source, array &$paths ): void {
+		foreach ( $source as $value ) {
+			if ( is_string( $value ) && '' !== $value ) {
+				$paths[] = $value;
+			} elseif ( is_array( $value ) ) {
+				self::collect_string_paths( $value, $paths );
+			}
+		}
 	}
 
 	/**
@@ -560,6 +615,77 @@ final class RuntimeNativeWriter {
 			return false;
 		}
 		return 0 !== stripos( $name, 'on' );
+	}
+
+	/**
+	 * Merge or remove one Divi Custom Attribute record by (name,targetElement).
+	 *
+	 * @param array<string, mixed> $values Values.
+	 * @return array<string, mixed>
+	 */
+	private static function mutate_custom_attribute_records( array $values, string $path, string $name, string $target_element, string $value, bool $unset ): array {
+		$records = self::path_value( $values, $path );
+		$records = is_array( $records ) ? $records : array();
+		$next    = array();
+		$matched = false;
+
+		foreach ( $records as $record ) {
+			if ( ! is_array( $record ) ) {
+				$next[] = $record;
+				continue;
+			}
+
+			$record_name   = isset( $record['name'] ) && is_string( $record['name'] ) ? $record['name'] : '';
+			$record_target = isset( $record['targetElement'] ) && is_string( $record['targetElement'] ) ? $record['targetElement'] : '';
+
+			if ( $record_name === $name && $record_target === $target_element ) {
+				if ( $unset ) {
+					continue;
+				}
+				if ( ! $matched ) {
+					$record['name']          = $name;
+					$record['value']         = $value;
+					$record['targetElement'] = $target_element;
+					$next[]                  = $record;
+					$matched                 = true;
+				}
+				continue;
+			}
+
+			$next[] = $record;
+		}
+
+		if ( ! $unset && ! $matched ) {
+			$next[] = array(
+				'name'          => $name,
+				'value'         => $value,
+				'targetElement' => $target_element,
+			);
+		}
+
+		if ( $unset && array() === $next ) {
+			return self::unset_path_value( $values, $path );
+		}
+
+		return self::set_path_value( $values, $path, array_values( $next ) );
+	}
+
+	/**
+	 * @param array<string, mixed> $values Values.
+	 * @return mixed
+	 */
+	private static function path_value( array $values, string $path ) {
+		$segments = explode( '.', $path );
+		$current  = $values;
+
+		foreach ( $segments as $segment ) {
+			if ( '' === $segment || ! is_array( $current ) || ! array_key_exists( $segment, $current ) ) {
+				return null;
+			}
+			$current = $current[ $segment ];
+		}
+
+		return $current;
 	}
 
 	/**
