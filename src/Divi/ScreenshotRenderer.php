@@ -139,7 +139,7 @@ final class ScreenshotRenderer {
 			return self::failure( $post_id, $page_url, $width, $viewport_height, $full_page, $format, $quality, $warnings, 'invalid_internal_page_url', 'WordPress did not generate a valid same-site frontend URL for this post.' );
 		}
 
-		$render_url = $page_url;
+		$render_url  = $page_url;
 		$post_status = isset( $post->post_status ) ? (string) $post->post_status : '';
 		if ( 'publish' !== $post_status ) {
 			$preview_url = function_exists( 'get_preview_post_link' ) ? get_preview_post_link( $post ) : '';
@@ -233,8 +233,8 @@ final class ScreenshotRenderer {
 			return self::failure( $post_id, $page_url, $width, $viewport_height, $full_page, $format, $quality, $warnings, 'render_output_dimensions_exceeded', 'The rendered image exceeded the configured maximum dimensions or pixel count.', self::engine_id( $engine ) );
 		}
 
-		$engine_warn = isset( $engine_result['warnings'] ) && is_array( $engine_result['warnings'] ) ? $engine_result['warnings'] : array();
-		$warnings    = array_merge( $warnings, $engine_warn );
+		$engine_warn   = isset( $engine_result['warnings'] ) && is_array( $engine_result['warnings'] ) ? $engine_result['warnings'] : array();
+		$warnings      = array_merge( $warnings, $engine_warn );
 		$render_method = isset( $engine_result['render_method'] ) && is_string( $engine_result['render_method'] ) && '' !== trim( $engine_result['render_method'] )
 			? trim( $engine_result['render_method'] )
 			: self::engine_id( $engine );
@@ -248,21 +248,21 @@ final class ScreenshotRenderer {
 		);
 
 		$metadata = array(
-			'success'        => true,
-			'post_id'        => $post_id,
-			'page_url'       => $page_url,
-			'width'          => $width,
-			'height'         => $viewport_height,
-			'full_page'      => $full_page,
-			'format'         => $format,
-			'quality'        => $quality,
-			'image_file'     => $image_file,
-			'image_width'    => $image_info['width'],
-			'image_height'   => $image_info['height'],
-			'render_method'  => $render_method,
-			'warnings'       => $warnings,
-			'error_code'     => null,
-			'error_message'  => null,
+			'success'       => true,
+			'post_id'       => $post_id,
+			'page_url'      => $page_url,
+			'width'         => $width,
+			'height'        => $viewport_height,
+			'full_page'     => $full_page,
+			'format'        => $format,
+			'quality'       => $quality,
+			'image_file'    => $image_file,
+			'image_width'   => $image_info['width'],
+			'image_height'  => $image_info['height'],
+			'render_method' => $render_method,
+			'warnings'      => $warnings,
+			'error_code'    => null,
+			'error_message' => null,
 		);
 
 		return array_merge(
@@ -315,8 +315,13 @@ final class ScreenshotRenderer {
 			return $user_id;
 		}
 
+		$signing_key = self::signing_key();
+		if ( '' === $signing_key ) {
+			return $user_id;
+		}
+
 		$payload  = self::token_payload( $post_id, $preview_uid, $expires, $current_target_hash );
-		$expected = hash_hmac( 'sha256', $payload, self::signing_key() );
+		$expected = hash_hmac( 'sha256', $payload, $signing_key );
 		if ( ! hash_equals( $expected, strtolower( $signature ) ) ) {
 			return $user_id;
 		}
@@ -378,9 +383,14 @@ final class ScreenshotRenderer {
 			return '';
 		}
 
+		$signing_key = self::signing_key();
+		if ( '' === $signing_key ) {
+			return '';
+		}
+
 		$expires     = time() + self::PREVIEW_TOKEN_TTL;
 		$target_hash = hash( 'sha256', self::canonical_target( $preview_url ) );
-		$signature   = hash_hmac( 'sha256', self::token_payload( $post_id, $user_id, $expires, $target_hash ), self::signing_key() );
+		$signature   = hash_hmac( 'sha256', self::token_payload( $post_id, $user_id, $expires, $target_hash ), $signing_key );
 
 		return (string) add_query_arg(
 			array(
@@ -406,11 +416,15 @@ final class ScreenshotRenderer {
 		if ( defined( 'AUTH_SALT' ) ) {
 			return (string) AUTH_SALT;
 		}
-		return 'divi5-mcp-screenshot-unavailable-key';
+		return '';
 	}
 
 	private static function canonical_target( string $url_or_uri ): string {
-		$parts = parse_url( $url_or_uri );
+		$parts = wp_parse_url( $url_or_uri );
+		if ( ! is_array( $parts ) ) {
+			return '/';
+		}
+
 		$path  = isset( $parts['path'] ) && is_string( $parts['path'] ) && '' !== $parts['path'] ? $parts['path'] : '/';
 		$query = array();
 
@@ -442,9 +456,11 @@ final class ScreenshotRenderer {
 	}
 
 	private static function query_scalar( string $key ): string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This query is authenticated by the short-lived HMAC checked in determine_preview_user().
 		if ( ! isset( $_GET[ $key ] ) || ! is_scalar( $_GET[ $key ] ) ) {
 			return '';
 		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This query is authenticated by the short-lived HMAC checked in determine_preview_user().
 		return trim( (string) wp_unslash( $_GET[ $key ] ) );
 	}
 
@@ -486,18 +502,6 @@ final class ScreenshotRenderer {
 		$format = self::image_format_from_signature( $data );
 		if ( null === $format ) {
 			return null;
-		}
-
-		if ( function_exists( 'getimagesizefromstring' ) ) {
-			$size = getimagesizefromstring( $data );
-			if ( is_array( $size ) && isset( $size[0], $size[1] ) ) {
-				return array(
-					'format'    => $format,
-					'mime_type' => 'jpeg' === $format ? 'image/jpeg' : 'image/png',
-					'width'     => (int) $size[0],
-					'height'    => (int) $size[1],
-				);
-			}
 		}
 
 		return 'png' === $format ? self::png_info( $data ) : self::jpeg_info( $data );
@@ -608,21 +612,21 @@ final class ScreenshotRenderer {
 		?string $render_method = null
 	): array {
 		return array(
-			'success'        => false,
-			'post_id'        => $post_id,
-			'page_url'       => $page_url,
-			'width'          => $width,
-			'height'         => $height,
-			'full_page'      => $full_page,
-			'format'         => $format,
-			'quality'        => $quality,
-			'image_file'     => null,
-			'image_width'    => null,
-			'image_height'   => null,
-			'render_method'  => $render_method,
-			'warnings'       => $warnings,
-			'error_code'     => $code,
-			'error_message'  => $message,
+			'success'       => false,
+			'post_id'       => $post_id,
+			'page_url'      => $page_url,
+			'width'         => $width,
+			'height'        => $height,
+			'full_page'     => $full_page,
+			'format'        => $format,
+			'quality'       => $quality,
+			'image_file'    => null,
+			'image_width'   => null,
+			'image_height'  => null,
+			'render_method' => $render_method,
+			'warnings'      => $warnings,
+			'error_code'    => $code,
+			'error_message' => $message,
 		);
 	}
 
