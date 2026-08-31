@@ -1,6 +1,6 @@
 <?php
 /**
- * Temporary validation-branch shim for the pre-existing OAuth pin drift on main.
+ * Temporary validation-only shim for the pre-existing OAuth pin drift on main.
  *
  * @package Divi5WooCommerceMCP
  */
