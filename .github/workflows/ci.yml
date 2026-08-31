@@ -13,6 +13,39 @@ permissions:
   contents: read
 
 jobs:
+  dependency-integrity:
+    name: Dependency Integrity
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Require Composer lock
+        run: test -f composer.lock
+
+      - name: Validate Composer metadata and lock
+        run: composer validate --strict
+
+      - name: Install locked dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Verify OAuth dependency integrity
+        run: composer run validate-oauth-dependency
+
+      - name: Audit locked dependencies
+        run: composer audit --locked
+
+      - name: Verify install did not modify lock
+        run: git diff --exit-code -- composer.lock
+
   quality:
     name: PHP, tests, build, Plugin Check
     runs-on: ubuntu-latest
@@ -28,14 +61,8 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Validate Composer metadata
-        run: composer validate --strict
-
       - name: Install development dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
-
-      - name: Verify OAuth dependency revision
-        run: composer run validate-oauth-dependency
 
       - name: Version consistency
         run: composer run validate-version
