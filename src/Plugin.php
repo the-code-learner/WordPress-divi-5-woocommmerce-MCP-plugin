@@ -13,6 +13,7 @@ use CodeLearner\Divi5WooCommerceMCP\Admin\Settings;
 use CodeLearner\Divi5WooCommerceMCP\Divi\Abilities as DiviAbilities;
 use CodeLearner\Divi5WooCommerceMCP\Divi\CleanBreakAbilities;
 use CodeLearner\Divi5WooCommerceMCP\Divi\NativeModuleAbilities;
+use CodeLearner\Divi5WooCommerceMCP\Divi\RuntimeBridgeAbilities;
 use CodeLearner\Divi5WooCommerceMCP\MCP\Server;
 use CodeLearner\Divi5WooCommerceMCP\Telemetry\Telemetry;
 use CodeLearner\Divi5WooCommerceMCP\Updates\GitHubUpdater;
@@ -40,6 +41,7 @@ final class Plugin {
 		DiviAbilities::hooks();
 		NativeModuleAbilities::hooks();
 		CleanBreakAbilities::hooks();
+		RuntimeBridgeAbilities::hooks();
 		Server::boot();
 	}
 
