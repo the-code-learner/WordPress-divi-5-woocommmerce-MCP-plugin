@@ -23,11 +23,11 @@ final class RuntimeRegistryDiscovery {
 	 * @return array<string, mixed>
 	 */
 	public static function list_registries(): array {
-		$snapshot = self::snapshot();
+		$snapshot   = self::snapshot();
 		$registries = array();
 
 		foreach ( $snapshot['registries'] as $name => $registry ) {
-			$entries = isset( $registry['entries'] ) && is_array( $registry['entries'] ) ? $registry['entries'] : array();
+			$entries      = isset( $registry['entries'] ) && is_array( $registry['entries'] ) ? $registry['entries'] : array();
 			$registries[] = array(
 				'name'     => $name,
 				'status'   => isset( $registry['status'] ) ? $registry['status'] : 'unknown',
@@ -130,7 +130,7 @@ final class RuntimeRegistryDiscovery {
 				continue;
 			}
 
-			$name = $module['name'];
+			$name             = $module['name'];
 			$module_entries[] = array(
 				'name'               => $name,
 				'title'              => isset( $module['title'] ) ? $module['title'] : $name,
@@ -142,7 +142,10 @@ final class RuntimeRegistryDiscovery {
 
 			$provider = isset( $module['provider']['id'] ) && is_string( $module['provider']['id'] ) ? $module['provider']['id'] : 'unknown';
 			if ( ! isset( $providers[ $provider ] ) ) {
-				$providers[ $provider ] = array( 'name' => $provider, 'module_count' => 0 );
+				$providers[ $provider ] = array(
+					'name'         => $provider,
+					'module_count' => 0,
+				);
 			}
 			++$providers[ $provider ]['module_count'];
 
@@ -169,10 +172,16 @@ final class RuntimeRegistryDiscovery {
 				}
 
 				if ( isset( $parameter['hover'] ) && 'supported' === $parameter['hover'] ) {
-					$states['hover'] = array( 'name' => 'hover', 'source' => 'runtime-parameter-feature' );
+					$states['hover'] = array(
+						'name'   => 'hover',
+						'source' => 'runtime-parameter-feature',
+					);
 				}
 				if ( isset( $parameter['sticky'] ) && 'supported' === $parameter['sticky'] ) {
-					$states['sticky'] = array( 'name' => 'sticky', 'source' => 'runtime-parameter-feature' );
+					$states['sticky'] = array(
+						'name'   => 'sticky',
+						'source' => 'runtime-parameter-feature',
+					);
 				}
 			}
 
@@ -218,7 +227,10 @@ final class RuntimeRegistryDiscovery {
 
 		$breakpoint_registry = self::discover_breakpoint_registry( array_keys( $breakpoint_evidence ) );
 		$breakpoints         = $breakpoint_registry['entries'];
-		$states['value']     = array( 'name' => 'value', 'source' => 'divi-attribute-state-convention' );
+		$states['value']     = array(
+			'name'   => 'value',
+			'source' => 'divi-attribute-state-convention',
+		);
 
 		foreach ( $attribute_roots as &$root_entry ) {
 			$root_entry['types'] = array_values( array_keys( $root_entry['types'] ) );
@@ -226,24 +238,24 @@ final class RuntimeRegistryDiscovery {
 		unset( $root_entry );
 
 		$registries = array(
-			'modules' => self::registry( $module_entries, 'runtime block registry' ),
-			'providers' => self::registry( array_values( $providers ), 'module namespaces observed in the runtime block registry' ),
-			'field-components' => self::registry( array_values( $field_components ), 'component metadata recursively discovered in runtime module schemas' ),
-			'option-groups' => self::registry( array_values( $option_groups ), 'groupSlug metadata recursively discovered in runtime module schemas' ),
-			'breakpoints' => array(
+			'modules'              => self::registry( $module_entries, 'runtime block registry' ),
+			'providers'            => self::registry( array_values( $providers ), 'module namespaces observed in the runtime block registry' ),
+			'field-components'     => self::registry( array_values( $field_components ), 'component metadata recursively discovered in runtime module schemas' ),
+			'option-groups'        => self::registry( array_values( $option_groups ), 'groupSlug metadata recursively discovered in runtime module schemas' ),
+			'breakpoints'          => array(
 				'status'   => array() !== $breakpoints ? 'supported' : 'unknown',
 				'evidence' => $breakpoint_registry['evidence'],
 				'entries'  => $breakpoints,
 			),
-			'states' => self::registry( array_values( $states ), 'runtime feature metadata and persisted breakpoint/state envelopes' ),
-			'dynamic-content' => self::registry( array_values( $dynamic_content ), 'features.dynamicContent metadata recursively discovered in runtime schemas' ),
-			'attributes' => self::registry( array_values( $attribute_roots ), 'top-level WordPress block attribute schemas registered by Divi modules' ),
-			'layout-engines' => self::registry( array_values( $layout_engines ), 'runtime option components and layout-related parameter paths' ),
-			'presets' => self::unknown_registry( 'preset capability is detected per parameter, but no authoritative runtime preset registry API was discovered by this adapter yet' ),
-			'design-variables' => self::unknown_registry( 'design-variable capability is detected per parameter, but no authoritative runtime variable registry API was discovered by this adapter yet' ),
-			'loop-providers' => self::unknown_registry( 'loop settings are visible in module schemas, but provider registration metadata is not yet exposed through a proven server-side registry' ),
+			'states'               => self::registry( array_values( $states ), 'runtime feature metadata and persisted breakpoint/state envelopes' ),
+			'dynamic-content'      => self::registry( array_values( $dynamic_content ), 'features.dynamicContent metadata recursively discovered in runtime schemas' ),
+			'attributes'           => self::registry( array_values( $attribute_roots ), 'top-level WordPress block attribute schemas registered by Divi modules' ),
+			'layout-engines'       => self::registry( array_values( $layout_engines ), 'runtime option components and layout-related parameter paths' ),
+			'presets'              => self::unknown_registry( 'preset capability is detected per parameter, but no authoritative runtime preset registry API was discovered by this adapter yet' ),
+			'design-variables'     => self::unknown_registry( 'design-variable capability is detected per parameter, but no authoritative runtime variable registry API was discovered by this adapter yet' ),
+			'loop-providers'       => self::unknown_registry( 'loop settings are visible in module schemas, but provider registration metadata is not yet exposed through a proven server-side registry' ),
 			'interaction-triggers' => self::unknown_registry( 'interaction groups are visible in schemas, but trigger providers are not yet exposed through a proven server-side registry' ),
-			'interaction-actions' => self::unknown_registry( 'interaction groups are visible in schemas, but action providers are not yet exposed through a proven server-side registry' ),
+			'interaction-actions'  => self::unknown_registry( 'interaction groups are visible in schemas, but action providers are not yet exposed through a proven server-side registry' ),
 		);
 
 		$module_hash  = hash( 'sha256', self::canonical_json( $module_entries ) );
@@ -251,7 +263,7 @@ final class RuntimeRegistryDiscovery {
 		$feature_hash = hash( 'sha256', self::canonical_json( $registries ) );
 
 		self::$snapshot = array(
-			'registries' => $registries,
+			'registries'          => $registries,
 			'runtime_fingerprint' => array(
 				'module_registry_hash'  => $module_hash,
 				'schema_hash'           => $schema_hash,
@@ -291,7 +303,11 @@ final class RuntimeRegistryDiscovery {
 				++$field_components[ $key ]['module_count'];
 
 				if ( false !== stripos( $name, 'layout' ) || false !== stripos( implode( '.', $path ), 'layout' ) || false !== stripos( $name, 'grid' ) || false !== stripos( $name, 'flex' ) ) {
-					$layout_engines[ $name ] = array( 'name' => $name, 'component_type' => $type, 'source' => 'runtime-component' );
+					$layout_engines[ $name ] = array(
+						'name'           => $name,
+						'component_type' => $type,
+						'source'         => 'runtime-component',
+					);
 				}
 			}
 		}
@@ -299,7 +315,12 @@ final class RuntimeRegistryDiscovery {
 		if ( isset( $node['groupSlug'] ) && is_string( $node['groupSlug'] ) && '' !== $node['groupSlug'] ) {
 			$slug = $node['groupSlug'];
 			if ( ! isset( $option_groups[ $slug ] ) ) {
-				$option_groups[ $slug ] = array( 'name' => $slug, 'module_count' => 0, 'example_module' => $module_name, 'example_path' => implode( '.', $path ) );
+				$option_groups[ $slug ] = array(
+					'name'           => $slug,
+					'module_count'   => 0,
+					'example_module' => $module_name,
+					'example_path'   => implode( '.', $path ),
+				);
 			}
 			++$option_groups[ $slug ]['module_count'];
 		}
@@ -307,13 +328,20 @@ final class RuntimeRegistryDiscovery {
 		if ( isset( $node['features'] ) && is_array( $node['features'] ) ) {
 			$features = $node['features'];
 			if ( isset( $features['dynamicContent'] ) && is_array( $features['dynamicContent'] ) ) {
-				$type = isset( $features['dynamicContent']['type'] ) && is_string( $features['dynamicContent']['type'] ) ? $features['dynamicContent']['type'] : 'unknown';
-				$key  = $type . ':' . $module_name . ':' . implode( '.', $path );
-				$dynamic_content[ $key ] = array( 'type' => $type, 'module' => $module_name, 'path' => implode( '.', $path ) );
+				$type                    = isset( $features['dynamicContent']['type'] ) && is_string( $features['dynamicContent']['type'] ) ? $features['dynamicContent']['type'] : 'unknown';
+				$key                     = $type . ':' . $module_name . ':' . implode( '.', $path );
+				$dynamic_content[ $key ] = array(
+					'type'   => $type,
+					'module' => $module_name,
+					'path'   => implode( '.', $path ),
+				);
 			}
 			foreach ( array( 'hover', 'sticky', 'active', 'focus' ) as $state ) {
 				if ( isset( $features[ $state ] ) && false !== $features[ $state ] && null !== $features[ $state ] ) {
-					$states[ $state ] = array( 'name' => $state, 'source' => 'runtime-feature' );
+					$states[ $state ] = array(
+						'name'   => $state,
+						'source' => 'runtime-feature',
+					);
 				}
 			}
 		}
@@ -345,7 +373,10 @@ final class RuntimeRegistryDiscovery {
 				$breakpoints[ $key ] = true;
 				foreach ( $child as $state => $unused ) {
 					if ( is_string( $state ) && 'value' !== $state ) {
-						$states[ $state ] = array( 'name' => $state, 'source' => 'persisted-attribute-envelope' );
+						$states[ $state ] = array(
+							'name'   => $state,
+							'source' => 'persisted-attribute-envelope',
+						);
 					}
 				}
 			}

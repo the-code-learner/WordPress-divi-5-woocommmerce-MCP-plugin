@@ -10,9 +10,9 @@ declare(strict_types=1);
 namespace CodeLearner\Divi5WooCommerceMCP\Divi;
 
 final class RuntimeNativeWriter {
-	private const CUSTOM_CLASS_ID_PATH = 'module.advanced.htmlAttributes';
+	private const CUSTOM_CLASS_ID_PATH  = 'module.advanced.htmlAttributes';
 	private const CUSTOM_ATTRIBUTE_PATH = 'module.advanced.attributes';
-	private const MODULE_PRESET_PATH = 'module.meta.modulePreset';
+	private const MODULE_PRESET_PATH    = 'module.meta.modulePreset';
 
 	/**
 	 * Dry-run a raw-native/runtime-derived mutation batch.
@@ -36,7 +36,7 @@ final class RuntimeNativeWriter {
 		$plan['write_eligible'] = self::is_write_status( $status );
 
 		if ( ! $plan['write_eligible'] ) {
-			$plan['valid'] = false;
+			$plan['valid']    = false;
 			$plan['errors'][] = self::error(
 				'draft_required',
 				null,
@@ -109,7 +109,7 @@ final class RuntimeNativeWriter {
 		update_post_meta( $post_id, '_et_pb_use_builder', 'on' );
 		clean_post_cache( $post_id );
 
-		$document = DocumentModel::get( $post_id, true );
+		$document                 = DocumentModel::get( $post_id, true );
 		$document['valid']        = true;
 		$document['persisted']    = true;
 		$document['revision_id']  = $revision_id;
@@ -185,11 +185,11 @@ final class RuntimeNativeWriter {
 			return $resolved;
 		}
 
-		$descriptor      = $resolved['descriptor'];
-		$block           = $resolved['block'];
-		$native_path     = '';
-		$value           = null;
-		$parameter       = null;
+		$descriptor       = $resolved['descriptor'];
+		$block            = $resolved['block'];
+		$native_path      = '';
+		$value            = null;
+		$parameter        = null;
 		$validation_level = 'runtime-path-evidence';
 
 		switch ( $op ) {
@@ -306,10 +306,10 @@ final class RuntimeNativeWriter {
 			}
 		}
 
-		$attrs = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
-		$attrs = 'unset' === $op ? self::unset_path_value( $attrs, $native_path ) : self::set_path_value( $attrs, $native_path, $value );
+		$attrs          = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
+		$attrs          = 'unset' === $op ? self::unset_path_value( $attrs, $native_path ) : self::set_path_value( $attrs, $native_path, $value );
 		$block['attrs'] = $attrs;
-		$blocks = self::replace_block( $blocks, $resolved['path'], $block );
+		$blocks         = self::replace_block( $blocks, $resolved['path'], $block );
 
 		return array(
 			'blocks' => $blocks,
@@ -389,7 +389,10 @@ final class RuntimeNativeWriter {
 			$value = in_array( 'desktop', $breakpoints, true ) || array() === $breakpoints ? 'desktop' : (string) reset( $breakpoints );
 		}
 		if ( array() !== $breakpoints && ! in_array( $value, $breakpoints, true ) ) {
-			return array( 'error' => true, 'value' => $value );
+			return array(
+				'error' => true,
+				'value' => $value,
+			);
 		}
 		return array( 'value' => $value );
 	}
@@ -404,7 +407,10 @@ final class RuntimeNativeWriter {
 		$root       = (string) reset( $segments );
 
 		if ( ! isset( $attributes[ $root ] ) || ! is_array( $attributes[ $root ] ) ) {
-			return array( 'error' => 'The top-level native attribute is not declared by the registered WordPress block schema.', 'expected' => array_keys( $attributes ) );
+			return array(
+				'error'    => 'The top-level native attribute is not declared by the registered WordPress block schema.',
+				'expected' => array_keys( $attributes ),
+			);
 		}
 
 		if ( 1 === count( $segments ) ) {
@@ -413,7 +419,10 @@ final class RuntimeNativeWriter {
 
 		$root_type = isset( $attributes[ $root ]['type'] ) && is_string( $attributes[ $root ]['type'] ) ? $attributes[ $root ]['type'] : 'unknown';
 		if ( 'object' !== $root_type ) {
-			return array( 'error' => 'Nested native paths are only allowed beneath a runtime attribute declared as an object.', 'expected' => array( 'root_type' => 'object' ) );
+			return array(
+				'error'    => 'Nested native paths are only allowed beneath a runtime attribute declared as an object.',
+				'expected' => array( 'root_type' => 'object' ),
+			);
 		}
 
 		if ( $adapter_path ) {
@@ -463,15 +472,24 @@ final class RuntimeNativeWriter {
 		$type = isset( $parameter['type'] ) && is_string( $parameter['type'] ) ? $parameter['type'] : 'unknown';
 		if ( 0 === strpos( $type, 'divi/' ) ) {
 			if ( ! is_array( $value ) ) {
-				return array( 'expected' => 'object/array for ' . $type, 'message' => 'Complex Divi option-group values must be arrays.' );
+				return array(
+					'expected' => 'object/array for ' . $type,
+					'message'  => 'Complex Divi option-group values must be arrays.',
+				);
 			}
 		} elseif ( ! self::value_matches_type( $value, $type ) ) {
-			return array( 'expected' => $type, 'message' => 'The supplied value does not match the runtime parameter type.' );
+			return array(
+				'expected' => $type,
+				'message'  => 'The supplied value does not match the runtime parameter type.',
+			);
 		}
 
 		$enum = isset( $parameter['enum'] ) && is_array( $parameter['enum'] ) ? $parameter['enum'] : array();
 		if ( array() !== $enum && ! in_array( $value, $enum, true ) ) {
-			return array( 'expected' => $enum, 'message' => 'The supplied value is not one of the runtime enum values.' );
+			return array(
+				'expected' => $enum,
+				'message'  => 'The supplied value is not one of the runtime enum values.',
+			);
 		}
 
 		return null;
@@ -491,10 +509,16 @@ final class RuntimeNativeWriter {
 		$schema = isset( $descriptor['raw_runtime']['attributes'][ $path ] ) && is_array( $descriptor['raw_runtime']['attributes'][ $path ] ) ? $descriptor['raw_runtime']['attributes'][ $path ] : array();
 		$type   = isset( $schema['type'] ) && is_string( $schema['type'] ) ? $schema['type'] : 'unknown';
 		if ( ! self::value_matches_type( $value, $type ) ) {
-			return array( 'expected' => $type, 'message' => 'The supplied value does not match the registered WordPress block attribute type.' );
+			return array(
+				'expected' => $type,
+				'message'  => 'The supplied value does not match the registered WordPress block attribute type.',
+			);
 		}
 		if ( isset( $schema['enum'] ) && is_array( $schema['enum'] ) && ! in_array( $value, $schema['enum'], true ) ) {
-			return array( 'expected' => $schema['enum'], 'message' => 'The supplied value is not allowed by the registered block attribute enum.' );
+			return array(
+				'expected' => $schema['enum'],
+				'message'  => 'The supplied value is not allowed by the registered block attribute enum.',
+			);
 		}
 		return null;
 	}
@@ -553,7 +577,7 @@ final class RuntimeNativeWriter {
 			$values[ $segment ] = $value;
 			return $values;
 		}
-		$child = isset( $values[ $segment ] ) && is_array( $values[ $segment ] ) ? $values[ $segment ] : array();
+		$child              = isset( $values[ $segment ] ) && is_array( $values[ $segment ] ) ? $values[ $segment ] : array();
 		$values[ $segment ] = self::set_path_value( $child, implode( '.', $segments ), $value );
 		return $values;
 	}
@@ -604,7 +628,11 @@ final class RuntimeNativeWriter {
 		if ( ! isset( $descriptors[ $name ] ) ) {
 			return self::error_result( 'node_not_authorable', $index, $handle, 'module_type', $name, 'registered Divi runtime module', 'The requested node is not an authorable runtime Divi module.' );
 		}
-		return array( 'path' => $path, 'block' => $block, 'descriptor' => $descriptors[ $name ] );
+		return array(
+			'path'       => $path,
+			'block'      => $block,
+			'descriptor' => $descriptors[ $name ],
+		);
 	}
 
 	/**
@@ -616,8 +644,8 @@ final class RuntimeNativeWriter {
 			if ( ! is_array( $block ) || ! isset( $block['blockName'] ) || ! is_string( $block['blockName'] ) || '' === $block['blockName'] ) {
 				continue;
 			}
-			$path   = '' === $prefix ? (string) $index : $prefix . '.' . $index;
-			$handle = DocumentModel::snapshot_handle( $document_token, $ordinal, $block['blockName'] );
+			$path           = '' === $prefix ? (string) $index : $prefix . '.' . $index;
+			$handle         = DocumentModel::snapshot_handle( $document_token, $ordinal, $block['blockName'] );
 			$map[ $handle ] = $path;
 			++$ordinal;
 			if ( isset( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
@@ -649,7 +677,7 @@ final class RuntimeNativeWriter {
 			$blocks[ $index ] = $replacement;
 			return $blocks;
 		}
-		$children = isset( $blocks[ $index ]['innerBlocks'] ) && is_array( $blocks[ $index ]['innerBlocks'] ) ? $blocks[ $index ]['innerBlocks'] : array();
+		$children                        = isset( $blocks[ $index ]['innerBlocks'] ) && is_array( $blocks[ $index ]['innerBlocks'] ) ? $blocks[ $index ]['innerBlocks'] : array();
 		$blocks[ $index ]['innerBlocks'] = self::replace_at_indexes( $children, $indexes, $replacement );
 		return $blocks;
 	}
@@ -695,7 +723,10 @@ final class RuntimeNativeWriter {
 				),
 			);
 		}
-		return array( 'post' => $post, 'blocks' => parse_blocks( $content ) );
+		return array(
+			'post'   => $post,
+			'blocks' => parse_blocks( $content ),
+		);
 	}
 
 	private static function is_write_status( string $status ): bool {
@@ -740,7 +771,13 @@ final class RuntimeNativeWriter {
 	 * @return array<string, mixed>
 	 */
 	private static function failure( int $post_id, string $code, string $message ): array {
-		return array( 'success' => false, 'post_id' => $post_id, 'persisted' => false, 'error_code' => $code, 'error_message' => $message );
+		return array(
+			'success'       => false,
+			'post_id'       => $post_id,
+			'persisted'     => false,
+			'error_code'    => $code,
+			'error_message' => $message,
+		);
 	}
 
 	/**

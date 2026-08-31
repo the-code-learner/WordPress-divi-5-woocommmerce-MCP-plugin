@@ -95,9 +95,19 @@ final class RuntimeBridgeAbilities {
 					'required'             => array( 'post_id' ),
 					'additionalProperties' => false,
 					'properties'           => array(
-						'post_id'      => array( 'type' => 'integer', 'minimum' => 1 ),
-						'include_html' => array( 'type' => 'boolean', 'default' => true ),
-						'selector'     => array( 'type' => 'string', 'maxLength' => 255, 'default' => '' ),
+						'post_id'      => array(
+							'type'    => 'integer',
+							'minimum' => 1,
+						),
+						'include_html' => array(
+							'type'    => 'boolean',
+							'default' => true,
+						),
+						'selector'     => array(
+							'type'      => 'string',
+							'maxLength' => 255,
+							'default'   => '',
+						),
 					),
 				),
 				'output_schema'       => self::generic_output_schema(),
@@ -177,8 +187,14 @@ final class RuntimeBridgeAbilities {
 			'required'             => array( 'post_id', 'document_token', 'operations' ),
 			'additionalProperties' => false,
 			'properties'           => array(
-				'post_id'        => array( 'type' => 'integer', 'minimum' => 1 ),
-				'document_token' => array( 'type' => 'string', 'pattern' => '^[a-f0-9]{64}$' ),
+				'post_id'        => array(
+					'type'    => 'integer',
+					'minimum' => 1,
+				),
+				'document_token' => array(
+					'type'    => 'string',
+					'pattern' => '^[a-f0-9]{64}$',
+				),
 				'operations'     => array(
 					'type'     => 'array',
 					'minItems' => 1,
@@ -188,8 +204,14 @@ final class RuntimeBridgeAbilities {
 						'required'             => array( 'op', 'handle' ),
 						'additionalProperties' => true,
 						'properties'           => array(
-							'op'          => array( 'type' => 'string', 'enum' => array( 'set', 'unset', 'attribute', 'responsive', 'state', 'preset' ) ),
-							'handle'      => array( 'type' => 'string', 'minLength' => 1 ),
+							'op'          => array(
+								'type' => 'string',
+								'enum' => array( 'set', 'unset', 'attribute', 'responsive', 'state', 'preset' ),
+							),
+							'handle'      => array(
+								'type'      => 'string',
+								'minLength' => 1,
+							),
 							'native_path' => array( 'type' => 'string' ),
 							'property'    => array( 'type' => 'string' ),
 							'breakpoint'  => array( 'type' => 'string' ),
@@ -227,7 +249,10 @@ final class RuntimeBridgeAbilities {
 		return array(
 			'public'       => true,
 			'show_in_rest' => false,
-			'mcp'          => array( 'public' => true, 'type' => 'tool' ),
+			'mcp'          => array(
+				'public' => true,
+				'type'   => 'tool',
+			),
 			'annotations'  => array(
 				'readonly'    => $is_readonly,
 				'destructive' => $destructive,

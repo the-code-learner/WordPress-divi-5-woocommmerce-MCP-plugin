@@ -59,9 +59,9 @@ final class RuntimeDescriptor {
 			'WordPress post and block parsing APIs'
 		);
 
-		$capabilities['document_validate'] = self::capability( 'supported', 'semantic and generic-native snapshot-bound dry-run planners are registered' );
-		$capabilities['document_mutate']   = self::capability( 'supported', 'semantic and generic-native batches are validated in memory before one draft-gated WordPress block persistence' );
-		$capabilities['state_edit']        = self::capability( 'supported', 'generic native writer derives state paths only from runtime parameter state/path evidence' );
+		$capabilities['document_validate']  = self::capability( 'supported', 'semantic and generic-native snapshot-bound dry-run planners are registered' );
+		$capabilities['document_mutate']    = self::capability( 'supported', 'semantic and generic-native batches are validated in memory before one draft-gated WordPress block persistence' );
+		$capabilities['state_edit']         = self::capability( 'supported', 'generic native writer derives state paths only from runtime parameter state/path evidence' );
 		$capabilities['preset_application'] = self::capability( 'supported', 'Divi module preset assignment is exposed through the native module meta adapter path; preset registry discovery may still be unknown' );
 		$capabilities['custom_attributes']  = self::capability( 'supported', 'module-wrapper class/id and safe custom HTML attributes map to Divi 5 Advanced HTML attribute storage and remain render-verifiable' );
 		$capabilities['render']             = self::capability( function_exists( 'do_blocks' ) ? 'supported' : 'unavailable', 'server-side WordPress block rendering with classes, IDs, inline CSS and warning capture' );
@@ -69,7 +69,7 @@ final class RuntimeDescriptor {
 
 		$compatibility = array(
 			'legacy_v0_4_abilities' => 'retained-as-shims',
-			'primary_api'            => 'clean-break-runtime-document+generic-runtime-bridge',
+			'primary_api'           => 'clean-break-runtime-document+generic-runtime-bridge',
 		);
 
 		return array(

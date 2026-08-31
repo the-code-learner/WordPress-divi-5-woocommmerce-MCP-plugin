@@ -100,12 +100,20 @@ final class RuntimeRenderer {
 	 */
 	private static function inspect_markup( string $html, string $selector ): array {
 		if ( ! class_exists( DOMDocument::class ) || ! class_exists( DOMXPath::class ) ) {
-			return array( 'status' => 'unavailable', 'selector' => $selector, 'reason' => 'DOM extension is unavailable.' );
+			return array(
+				'status'   => 'unavailable',
+				'selector' => $selector,
+				'reason'   => 'DOM extension is unavailable.',
+			);
 		}
 
 		$xpath_query = self::selector_to_xpath( $selector );
 		if ( null === $xpath_query ) {
-			return array( 'status' => 'unsupported-selector', 'selector' => $selector, 'reason' => 'Only tag, .class, #id, and [attribute] selectors are supported by the server-side inspector.' );
+			return array(
+				'status'   => 'unsupported-selector',
+				'selector' => $selector,
+				'reason'   => 'Only tag, .class, #id, and [attribute] selectors are supported by the server-side inspector.',
+			);
 		}
 
 		$dom      = new DOMDocument();
@@ -114,7 +122,11 @@ final class RuntimeRenderer {
 		libxml_clear_errors();
 		libxml_use_internal_errors( $previous );
 		if ( ! $loaded ) {
-			return array( 'status' => 'parse-failed', 'selector' => $selector, 'matches' => array() );
+			return array(
+				'status'   => 'parse-failed',
+				'selector' => $selector,
+				'matches'  => array(),
+			);
 		}
 
 		$xpath   = new DOMXPath( $dom );
