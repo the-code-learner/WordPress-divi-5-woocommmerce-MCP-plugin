@@ -11,7 +11,7 @@ namespace CodeLearner\Divi5WooCommerceMCP\Divi;
 
 final class RuntimeDescriptor {
 	private const API_GENERATION = 'clean-break-1';
-	private const API_VERSION    = '1.1.0-alpha.1';
+	private const API_VERSION    = '1.2.0-alpha.1';
 
 	/**
 	 * Describe the active Divi runtime without claiming unsupported features.
@@ -65,7 +65,8 @@ final class RuntimeDescriptor {
 		$capabilities['preset_application'] = self::capability( 'supported', 'Divi module preset assignment is exposed through the native module meta adapter path; preset registry discovery may still be unknown' );
 		$capabilities['custom_attributes']  = self::capability( 'supported', 'module-wrapper class/id and safe custom HTML attributes map to Divi 5 Advanced HTML attribute storage and remain render-verifiable' );
 		$capabilities['render']             = self::capability( function_exists( 'do_blocks' ) ? 'supported' : 'unavailable', 'server-side WordPress block rendering with classes, IDs, inline CSS and warning capture' );
-		$capabilities['inspect']            = self::capability( 'partial', 'server-side markup inspection is available; browser computed styles and layout dimensions remain unavailable' );
+		$capabilities['screenshot']         = ScreenshotRenderer::capability();
+		$capabilities['inspect']            = self::capability( 'partial', 'server-side markup inspection is available; browser computed styles and layout dimensions remain unavailable unless separately derived from a compatible visual renderer' );
 
 		$compatibility = array(
 			'legacy_v0_4_abilities' => 'retained-as-shims',
