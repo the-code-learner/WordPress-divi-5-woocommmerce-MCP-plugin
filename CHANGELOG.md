@@ -14,6 +14,27 @@ The format follows Keep a Changelog principles and the project uses Semantic Ver
 - Runtime-proven state/preset write mappings.
 - Revision-aware publish gate and persistent audit logging.
 
+## [1.1.1] - 2026-08-31
+
+### Fixed
+
+- Store generic module-wrapper Divi Custom Attributes in `module.decoration.attributes.<breakpoint>.value.attributes` as native `{name,value,targetElement}` records instead of writing scalar values beneath the non-rendering `module.advanced.attributes` path.
+- Merge and remove generic Custom Attribute records by the native `(name,targetElement)` identity while preserving unrelated records.
+- Require responsive writes to use an exact runtime-discovered `native_value_paths` entry for the requested breakpoint instead of constructing a persisted path from semantic/runtime hints.
+- Require state writes to have an explicit runtime-proven native state path; hover/sticky feature metadata alone no longer authorizes a synthesized write location.
+
+### Security
+
+- Keep class/id on Divi's verified Advanced HTML Attributes adapter, keep event-handler attributes rejected, and fail closed when responsive/state storage is not proven by runtime metadata.
+
+### Changed
+
+- Bumped plugin and WordPress stable release metadata to `1.1.1`.
+
+### Tests
+
+- Added regression coverage for generic Custom Attribute insert, update, targeted unset, preservation of unrelated records, exact responsive mapping requirements, and rejection of feature-only state mappings.
+
 ## [1.1.0] - 2026-08-31
 
 ### Added

@@ -3,7 +3,7 @@ Contributors: TODO-wordpress-org-username
 Tags: mcp, divi, woocommerce, ai, automation
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -14,9 +14,11 @@ Secure MCP access for WordPress with native Divi 5 authoring, OAuth, controlled 
 
 MCP Bridge for Divi 5 and WooCommerce builds on the WordPress Abilities API and the official WordPress MCP Adapter.
 
-Version 1.1.0 extends the clean-break runtime/document foundation with a generic Divi runtime bridge. MCP clients can discover runtime registries and schema fingerprints, dry-run or atomically persist runtime-proven native attribute paths, write responsive/state values from runtime metadata, apply module presets, map semantic Custom Attributes to Divi 5 native storage, and render/inspect the resulting server-side markup. Unknown systems remain explicitly `unknown` instead of being silently discarded or falsely marked unsupported.
+Version 1.1.1 corrects the generic Divi Custom Attribute writer discovered during live acceptance testing. Wrapper class/id remain in Divi's Advanced HTML Attributes structure, while other safe module-wrapper attributes are stored as native `{name,value,targetElement}` records under `module.decoration.attributes.<breakpoint>.value.attributes`. The writer now merges and removes those records by `(name,targetElement)` without destroying unrelated attributes. Responsive writes require an exact runtime-discovered `native_value_paths` entry for the requested breakpoint, and state writes fail closed unless the runtime exposes an explicit native state path instead of relying on feature metadata alone.
 
-The generic native writer remains deliberately conservative. Writes require a fresh document token and editable draft/pending content; arbitrary nested paths are rejected unless they are proven by runtime parameter metadata or an explicit Divi adapter contract. Wrapper class/id and safe custom HTML attributes use Divi 5's Advanced HTML attribute storage, event-handler attributes are rejected, complete mutation batches are validated before one post-content write, and a revision is requested before persistence. Server-side render inspection exposes generated HTML, classes, IDs, inline CSS, warnings, and basic selector matches; browser computed styles and layout dimensions are still reported as unavailable.
+Version 1.1.0 extends the clean-break runtime/document foundation with a generic Divi runtime bridge. MCP clients can discover runtime registries and schema fingerprints, dry-run or atomically persist runtime-proven native attribute paths, write responsive/state values when runtime evidence proves the mapping, apply module presets, map semantic Custom Attributes to Divi 5 native storage, and render/inspect the resulting server-side markup. Unknown systems remain explicitly `unknown` instead of being silently discarded or falsely marked unsupported.
+
+The generic native writer remains deliberately conservative. Writes require a fresh document token and editable draft/pending content; arbitrary nested paths are rejected unless they are proven by runtime parameter metadata or an explicit Divi adapter contract. Wrapper class/id use Divi 5's Advanced HTML attribute storage; safe generic wrapper attributes use Divi's Decoration Custom Attributes record collection. Event-handler attributes are rejected, complete mutation batches are validated before one post-content write, and a revision is requested before persistence. Server-side render inspection exposes generated HTML, classes, IDs, inline CSS, warnings, and basic selector matches; browser computed styles and layout dimensions are still reported as unavailable.
 
 Version 1.0.0 introduced the clean-break runtime/document foundation as the primary next-major Divi API. MCP clients can discover the active Divi runtime and module schemas, read a normalized snapshot-bound document AST, dry-run atomic semantic mutation batches, and persist validated draft mutations through `divi-runtime-describe`, `divi-module-describe`, `divi-document-get`, `divi-document-validate`, and `divi-document-mutate`. The v0.4.0 abilities remain available as compatibility shims rather than the primary architecture.
 
@@ -90,13 +92,13 @@ The GitHub source checkout requires Composer and is not itself the production pa
 
 == Frequently Asked Questions ==
 
-= What is the primary Divi API in version 1.1.0? =
+= What is the primary Divi API in version 1.1.1? =
 
 Use the clean-break runtime/document abilities plus the generic runtime bridge: `divi-runtime-describe`, registry discovery, `divi-module-describe`, `divi-document-get`, semantic/native validate and mutate, and `divi-render`. They negotiate capabilities from the active runtime and keep unknown capability registries explicit. The older path-oriented abilities remain compatibility shims.
 
 = Why can a parameter appear in module introspection but not be writable? =
 
-The full parameter graph is intended for runtime introspection. Semantic mutation requires a persisted native value path and a validator-compatible value contract. The generic native writer can additionally address a new nested field when its location is proven by runtime parameter metadata, but it still rejects arbitrary guessed native paths.
+The full parameter graph is intended for runtime introspection. Semantic mutation requires a persisted native value path and a validator-compatible value contract. The generic native writer can additionally address a new nested field when its location is proven by runtime parameter metadata, but it still rejects arbitrary guessed native paths. Responsive mutation requires the exact persisted value path for the requested breakpoint; state mutation additionally requires an explicit native state path.
 
 = Does raw-native write mean arbitrary Divi JSON can be written? =
 
@@ -104,7 +106,7 @@ No. Top-level attributes must exist in the registered WordPress block schema. Ne
 
 = Can MCP add CSS classes and custom attributes without relying on className? =
 
-Yes. Version 1.1.0 maps wrapper class/id and safe HTML attributes to Divi 5's Advanced HTML attribute storage instead of relying on the ambiguous top-level `className`. The render ability can then verify whether the resulting class/attribute reaches server-rendered markup.
+Yes. Version 1.1.1 maps wrapper class/id to Divi 5's Advanced HTML Attributes and maps other safe wrapper attributes to Divi's Decoration Custom Attributes record collection. Generic records are merged by `(name,targetElement)` and the render ability can verify whether the resulting class/attribute reaches server-rendered markup.
 
 = Does divi-render provide browser computed styles? =
 
@@ -144,13 +146,19 @@ Yes. `divi5-woocommerce-mcp/update-self` can update only this plugin, requires t
 
 = Is this plugin production ready? =
 
-Not as a broad autonomous publishing or complete Visual Builder replacement. Version 1.1.0 materially expands conservative draft-first Divi runtime authoring, but complete Design Variables/relative-colors CRUD, authoritative preset registries, complete Loop/interaction provider registries, Theme Builder/global systems, publishing, and browser computed-style inspection remain future work or explicitly unknown until the active runtime proves them.
+Not as a broad autonomous publishing or complete Visual Builder replacement. Version 1.1.1 materially expands conservative draft-first Divi runtime authoring while tightening runtime-proof requirements, but complete Design Variables/relative-colors CRUD, authoritative preset/state registries and mappings, complete Loop/interaction provider registries, Theme Builder/global systems, publishing, and browser computed-style inspection remain future work or explicitly unknown until the active runtime proves them.
 
 == Screenshots ==
 
 Screenshots will be added after the preview/admin UI is implemented.
 
 == Changelog ==
+
+= 1.1.1 =
+* Fix generic Divi Custom Attributes to use `module.decoration.attributes.<breakpoint>.value.attributes` native record lists with `{name,value,targetElement}` entries.
+* Merge/update/unset generic records by `(name,targetElement)` while preserving unrelated attributes; keep class/id on Advanced HTML Attributes.
+* Require exact runtime-discovered responsive value paths and reject state writes unless an explicit native state path is available.
+* Add regression coverage for generic attribute insert/update/unset and fail-closed responsive/state mappings.
 
 = 1.1.0 =
 * Add generic runtime registry discovery with module/schema/feature/breakpoint fingerprints and explicit unknown capability states.

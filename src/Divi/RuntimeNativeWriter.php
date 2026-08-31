@@ -493,7 +493,7 @@ final class RuntimeNativeWriter {
 				if ( $path === $candidate || 0 === strpos( $path, $candidate . '.' ) || 0 === strpos( $candidate, $path . '.' ) ) {
 					return array( 'evidence' => 'runtime parameter graph path: ' . $candidate );
 				}
-			}
+		}
 		}
 
 		return array(
@@ -513,7 +513,7 @@ final class RuntimeNativeWriter {
 			} elseif ( is_array( $value ) ) {
 				self::collect_string_paths( $value, $paths );
 			}
-	}
+		}
 	}
 
 	/**
