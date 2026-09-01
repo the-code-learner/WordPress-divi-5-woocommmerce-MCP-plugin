@@ -99,15 +99,15 @@ final class CdpClient {
 	 */
 	public function send_async( string $method, array $params = array() ): int {
 		$id      = $this->next_id++;
-		$payload = json_encode(
-			array(
-				'id'     => $id,
-				'method' => $method,
-				'params' => $params,
-			),
-			JSON_UNESCAPED_SLASHES
+		$command = array(
+			'id'     => $id,
+			'method' => $method,
 		);
+		if ( array() !== $params ) {
+			$command['params'] = $params;
+		}
 
+		$payload = json_encode( $command, JSON_UNESCAPED_SLASHES );
 		if ( ! is_string( $payload ) ) {
 			throw new RuntimeException( 'Could not encode CDP command.' );
 		}
