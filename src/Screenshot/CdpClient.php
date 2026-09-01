@@ -11,6 +11,19 @@ namespace CodeLearner\Divi5WooCommerceMCP\Screenshot;
 
 use RuntimeException;
 
+// Raw localhost CDP/RFC6455 I/O has no WordPress API equivalent.
+// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
+// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fread
+// phpcs:disable WordPress.PHP.NoSilencedErrors.Discouraged
+// WebSocket and CDP encode binary/protocol payloads, not executable PHP code.
+// phpcs:disable WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+// WordPress helpers are not guaranteed while this protocol class is loaded in standalone tests.
+// phpcs:disable WordPress.WP.AlternativeFunctions.json_encode_json_encode
+// phpcs:disable WordPress.WP.AlternativeFunctions.parse_url_parse_url
+// These RuntimeException messages are internal control flow and are never emitted as HTML.
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped
+
 final class CdpClient {
 	/** @var resource|null */
 	private $socket;
@@ -351,9 +364,10 @@ final class CdpClient {
 			return '';
 		}
 
-		$data = '';
-		while ( strlen( $data ) < $length ) {
-			$chunk = fread( $socket, $length - strlen( $data ) );
+		$data        = '';
+		$data_length = 0;
+		while ( $data_length < $length ) {
+			$chunk = fread( $socket, $length - $data_length );
 			if ( false === $chunk || '' === $chunk ) {
 				$meta = stream_get_meta_data( $socket );
 				if ( ! empty( $meta['timed_out'] ) || feof( $socket ) ) {
@@ -361,7 +375,8 @@ final class CdpClient {
 				}
 				continue;
 			}
-			$data .= $chunk;
+			$data        .= $chunk;
+			$data_length += strlen( $chunk );
 		}
 		return $data;
 	}

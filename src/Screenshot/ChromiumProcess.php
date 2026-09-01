@@ -11,14 +11,32 @@ namespace CodeLearner\Divi5WooCommerceMCP\Screenshot;
 
 use RuntimeException;
 
+// This class intentionally manages an isolated native process and localhost sockets.
+// WordPress filesystem/HTTP abstractions cannot replace these process-level primitives.
+// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_mkdir
+// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
+// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
+// phpcs:disable WordPress.WP.AlternativeFunctions.unlink_unlink
+// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
+// phpcs:disable WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+// phpcs:disable WordPress.PHP.NoSilencedErrors.Discouraged
+// phpcs:disable WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open
+// RuntimeException text is internal control flow and is sanitized before MCP output.
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped
+
 final class ChromiumProcess {
 	/** @var resource|null */
 	private $process = null;
 
 	private string $binary_path;
+
 	private string $temp_dir = '';
+
 	private int $port = 0;
+
 	private string $stderr_path = '';
+
 	private string $stdout_path = '';
 
 	public function __construct( string $binary_path ) {
@@ -89,6 +107,7 @@ final class ChromiumProcess {
 
 		$this->process = $process;
 		$deadline      = microtime( true ) + $timeout_seconds;
+		$last_error    = '';
 
 		while ( microtime( true ) < $deadline ) {
 			if ( ! $this->is_running() ) {
@@ -103,13 +122,16 @@ final class ChromiumProcess {
 					return;
 				}
 			} catch ( RuntimeException $exception ) {
-				// Keep polling until the startup timeout.
+				$last_error = $exception->getMessage();
 			}
 
 			usleep( 50000 );
 		}
 
 		$error = $this->stderr_excerpt();
+		if ( '' === $error && '' !== $last_error ) {
+			$error = $last_error;
+		}
 		$this->stop();
 		throw new RuntimeException( 'Chromium CDP did not become ready before timeout.' . ( '' !== $error ? ' ' . $error : '' ) );
 	}

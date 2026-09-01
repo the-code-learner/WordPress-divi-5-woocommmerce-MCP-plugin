@@ -12,6 +12,11 @@ namespace CodeLearner\Divi5WooCommerceMCP\Screenshot;
 use RuntimeException;
 use Throwable;
 
+// CDP transports screenshot bytes as base64; this is data decoding, not code obfuscation.
+// phpcs:disable WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+// WordPress URL helpers are not guaranteed while this class is loaded in standalone CI tests.
+// phpcs:disable WordPress.WP.AlternativeFunctions.parse_url_parse_url
+
 final class ChromiumCapture {
 	private string $binary_path;
 
@@ -44,8 +49,10 @@ final class ChromiumCapture {
 				),
 				5.0
 			);
+
 			$image = isset( $result['data'] ) && is_string( $result['data'] ) ? base64_decode( $result['data'], true ) : false;
 			$client->close();
+
 			$valid = is_string( $image ) && 8 <= strlen( $image ) && "\x89PNG\r\n\x1a\n" === substr( $image, 0, 8 );
 			return array(
 				'success'       => $valid,
@@ -122,7 +129,7 @@ final class ChromiumCapture {
 					$cdp->send_async(
 						'Fetch.failRequest',
 						array(
-							'requestId'  => $request_id,
+							'requestId'   => $request_id,
 							'errorReason' => 'BlockedByClient',
 						)
 					);
@@ -299,7 +306,7 @@ final class ChromiumCapture {
 			$size    = isset( $metrics['cssContentSize'] ) && is_array( $metrics['cssContentSize'] )
 				? $metrics['cssContentSize']
 				: ( isset( $metrics['contentSize'] ) && is_array( $metrics['contentSize'] ) ? $metrics['contentSize'] : array() );
-			$height = isset( $size['height'] ) ? (int) ceil( (float) $size['height'] ) : 0;
+			$height  = isset( $size['height'] ) ? (int) ceil( (float) $size['height'] ) : 0;
 			if ( $height < 1 ) {
 				throw new RuntimeException( 'Chromium did not report a valid document height.' );
 			}
