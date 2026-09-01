@@ -95,6 +95,22 @@ jobs:
           test -f build/mcp-bridge-for-divi-woocommerce/bin/linux-x86_64/chrome-headless-shell/LICENSE.headless_shell
           test "$(cat build/mcp-bridge-for-divi-woocommerce/bin/linux-x86_64/chrome-headless-shell/.bundle-version)" = "152.0.7977.64"
 
+      - name: Allow bundled Chromium user namespaces in CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          browser="$(realpath build/mcp-bridge-for-divi-woocommerce/bin/linux-x86_64/chrome-headless-shell/chrome-headless-shell)"
+          profile=/etc/apparmor.d/divi-mcp-chromium-ci
+          cat <<EOF | sudo tee "${profile}" >/dev/null
+          abi <abi/4.0>,
+          include <tunables/global>
+
+          profile divi-mcp-chromium-ci ${browser} flags=(unconfined) {
+            userns,
+          }
+          EOF
+          sudo apparmor_parser -r "${profile}"
+
       - name: Bundled Chromium smoke test
         shell: bash
         run: |
