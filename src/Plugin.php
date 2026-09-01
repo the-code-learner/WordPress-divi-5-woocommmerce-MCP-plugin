@@ -16,6 +16,8 @@ use CodeLearner\Divi5WooCommerceMCP\Divi\NativeModuleAbilities;
 use CodeLearner\Divi5WooCommerceMCP\Divi\RuntimeBridgeAbilities;
 use CodeLearner\Divi5WooCommerceMCP\Divi\ScreenshotRenderer;
 use CodeLearner\Divi5WooCommerceMCP\MCP\Server;
+use CodeLearner\Divi5WooCommerceMCP\Screenshot\BundledChromiumBootstrap;
+use CodeLearner\Divi5WooCommerceMCP\Screenshot\ScreenshotAbilities;
 use CodeLearner\Divi5WooCommerceMCP\Telemetry\Telemetry;
 use CodeLearner\Divi5WooCommerceMCP\Updates\GitHubUpdater;
 use CodeLearner\Divi5WooCommerceMCP\WordPress\Abilities;
@@ -38,7 +40,9 @@ final class Plugin {
 		Settings::hooks();
 		GitHubUpdater::boot();
 		Telemetry::boot();
+		BundledChromiumBootstrap::hooks();
 		ScreenshotRenderer::hooks();
+		ScreenshotAbilities::hooks();
 		Abilities::hooks();
 		DiviAbilities::hooks();
 		NativeModuleAbilities::hooks();

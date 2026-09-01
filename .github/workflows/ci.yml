@@ -91,6 +91,21 @@ jobs:
           test ! -e build/mcp-bridge-for-divi-woocommerce/languages/.gitkeep
           test -e build/mcp-bridge-for-divi-woocommerce/vendor
           test -e build/mcp-bridge-for-divi-woocommerce/divi-5-woocommerce-mcp.php
+          test -x build/mcp-bridge-for-divi-woocommerce/bin/linux-x86_64/chrome-headless-shell/chrome-headless-shell
+          test -f build/mcp-bridge-for-divi-woocommerce/bin/linux-x86_64/chrome-headless-shell/LICENSE.headless_shell
+          test "$(cat build/mcp-bridge-for-divi-woocommerce/bin/linux-x86_64/chrome-headless-shell/.bundle-version)" = "152.0.7977.64"
+
+      - name: Bundled Chromium smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -S 127.0.0.1:8123 -t tests/fixtures/chromium-site >/tmp/divi-mcp-chromium-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "${server_pid}" >/dev/null 2>&1 || true' EXIT
+          sleep 1
+          php tests/chromium-smoke.php \
+            build/mcp-bridge-for-divi-woocommerce/bin/linux-x86_64/chrome-headless-shell/chrome-headless-shell \
+            http://127.0.0.1:8123/
 
       - name: WordPress Plugin Check
         uses: wordpress/plugin-check-action@v1

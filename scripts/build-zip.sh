@@ -17,6 +17,8 @@ command -v zip >/dev/null 2>&1 || {
   exit 1
 }
 
+"${ROOT_DIR}/scripts/fetch-chromium.sh"
+
 rm -rf "${BUILD_DIR}"
 mkdir -p "${STAGE_DIR}"
 
