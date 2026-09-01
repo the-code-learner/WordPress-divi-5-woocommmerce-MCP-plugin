@@ -274,7 +274,7 @@ final class ChromiumCapture {
 				),
 				min( 2.0, $this->remaining( $deadline ) )
 			);
-			$value = isset( $result['result']['value'] ) ? $result['result']['value'] : null;
+			$value  = isset( $result['result']['value'] ) ? $result['result']['value'] : null;
 			if ( is_array( $value ) ) {
 				$current_origin = isset( $value['href'] ) && is_string( $value['href'] ) ? self::origin_from_url( $value['href'] ) : null;
 				if ( null === $current_origin

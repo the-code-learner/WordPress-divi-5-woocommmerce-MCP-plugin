@@ -12,6 +12,12 @@ namespace CodeLearner\Divi5WooCommerceMCP\Screenshot;
 use CodeLearner\Divi5WooCommerceMCP\Divi\ScreenshotEngineInterface;
 use Throwable;
 
+// The executable bit and temp-dir checks operate on the plugin's fixed bundled binary path.
+// WordPress filesystem abstractions do not preserve the native executable semantics required here.
+// phpcs:disable WordPress.PHP.NoSilencedErrors.Discouraged
+// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_chmod
+// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
+
 final class BundledChromiumRenderer implements ScreenshotEngineInterface {
 	public const BUNDLE_VERSION = '152.0.7977.64';
 	public const PLATFORM       = 'linux-x86_64';
