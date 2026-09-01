@@ -40,7 +40,8 @@ final class ChromiumProcess {
 	private string $stdout_path = '';
 
 	public function __construct( string $binary_path ) {
-		$this->binary_path = $binary_path;
+		$resolved_path     = realpath( $binary_path );
+		$this->binary_path = is_string( $resolved_path ) && '' !== $resolved_path ? $resolved_path : $binary_path;
 	}
 
 	public function __destruct() {
