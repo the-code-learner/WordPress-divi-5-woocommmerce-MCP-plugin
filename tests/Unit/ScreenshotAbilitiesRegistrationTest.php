@@ -27,13 +27,23 @@ namespace CodeLearner\Divi5WooCommerceMCP\Tests\Unit {
 	use PHPUnit\Framework\TestCase;
 
 	final class ScreenshotAbilitiesRegistrationTest extends TestCase {
+		/** @var array<string, array<string, mixed>> */
+		private array $abilities = array();
+
 		protected function setUp(): void {
 			$GLOBALS['divi5_test_screenshot_abilities'] = array();
+			$GLOBALS['divi5_test_registered_abilities'] = array();
 			ScreenshotAbilities::register_abilities();
+
+			$this->abilities = array_merge(
+				$GLOBALS['divi5_test_registered_abilities'],
+				$GLOBALS['divi5_test_screenshot_abilities']
+			);
 		}
 
 		public function test_registers_parameterless_readonly_status_ability(): void {
-			$ability = $GLOBALS['divi5_test_screenshot_abilities']['divi5-woocommerce-mcp/divi-screenshot-status'];
+			self::assertArrayHasKey( 'divi5-woocommerce-mcp/divi-screenshot-status', $this->abilities );
+			$ability = $this->abilities['divi5-woocommerce-mcp/divi-screenshot-status'];
 
 			self::assertArrayNotHasKey( 'input_schema', $ability );
 			self::assertTrue( $ability['meta']['mcp']['public'] );
